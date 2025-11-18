@@ -1,0 +1,429 @@
+// This is your Prisma schema file
+// Learn more: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions"]
+}
+
+datasource db {
+  provider   = "postgresql"
+  url        = env("DATABASE_URL")
+  directUrl  = env("DIRECT_URL")
+  extensions = [pgvector(map: "vector"), pg_trgm, pgcrypto]
+}
+
+// ============================================
+// USUARIOS Y AUTENTICACIÓN
+// ============================================
+
+model Usuario {
+  id                  String   @id @default(uuid()) @db.Uuid
+  email               String   @unique
+  nombre_completo     String
+  nivel_seguridad     Int      @default(1) // 1=público, 2=interno, 3=confidencial
+  activo              Boolean  @default(true)
+  fecha_creacion      DateTime @default(now())
+  fecha_actualizacion DateTime @updatedAt
+
+  // Relaciones
+  dependencias       UsuarioDependencia[]
+  documentos_creados Documento[]
+  tramites_asignados Tramite[]
+  firmas             Firma[]
+  auditorias         Auditoria[]
+
+  @@index([email])
+  @@map("usuarios")
+}
+
+model Dependencia {
+  id             String   @id @default(uuid()) @db.Uuid
+  nombre         String
+  descripcion    String?
+  activa         Boolean  @default(true)
+  fecha_creacion DateTime @default(now())
+
+  // Relaciones
+  usuarios         UsuarioDependencia[]
+  documentos       Documento[]
+  tramites_origen  Tramite[]           @relation("TramiteOrigen")
+  tramites_destino Tramite[]           @relation("TramiteDestino")
+
+  @@index([nombre])
+  @@map("dependencias")
+}
+
+model UsuarioDependencia {
+  usuario_id       String   @db.Uuid
+  dependencia_id   String   @db.Uuid
+  rol              Rol
+  fecha_asignacion DateTime @default(now())
+
+  // Relaciones
+  usuario    Usuario     @relation(fields: [usuario_id], references: [id], onDelete: Cascade)
+  dependencia Dependencia @relation(fields: [dependencia_id], references: [id], onDelete: Cascade)
+
+  @@id([usuario_id, dependencia_id])
+  @@map("usuarios_dependencias")
+}
+
+enum Rol {
+  USUARIO
+  JEFE_DEPARTAMENTO
+  ADMINISTRADOR
+  SUPER_ADMIN
+}
+
+// ============================================
+// DOCUMENTOS
+// ============================================
+
+model Documento {
+  id                  String        @id @default(uuid()) @db.Uuid
+  titulo              String
+  tipo                TipoDocumento
+  clasificacion       Clasificacion
+  contenido           String?       @db.Text
+  hash_sha256         String        @unique
+  formato_archivo     String
+  tamano_bytes        Int
+  version             Int           @default(1)
+  fecha_creacion      DateTime      @default(now())
+  fecha_actualizacion DateTime      @updatedAt
+  periodo_retencion   Int // años
+  fecha_disposicion   DateTime?
+  storage_path        String?
+  thumbnail_url       String?
+
+  // Relaciones
+  autor_id       String      @db.Uuid
+  autor          Usuario     @relation(fields: [autor_id], references: [id])
+  dependencia_id String      @db.Uuid
+  dependencia    Dependencia @relation(fields: [dependencia_id], references: [id])
+  expediente_id  String?     @db.Uuid
+  expediente     Expediente? @relation(fields: [expediente_id], references: [id])
+
+  versiones         DocumentoVersion[]
+  tramites          Tramite[]
+  firmas            Firma[]
+  etiquetas         DocumentoEtiqueta[]
+  prueba_blockchain PruebaBlockchain?
+
+  @@index([titulo])
+  @@index([tipo])
+  @@index([clasificacion])
+  @@index([fecha_creacion])
+  @@index([autor_id])
+  @@index([dependencia_id])
+  @@index([expediente_id])
+  @@map("documentos")
+}
+
+enum TipoDocumento {
+  OFICIO
+  CONTRATO
+  ACTA
+  MEMORANDUM
+  FACTURA
+  INFORME
+  SOLICITUD
+  RESPUESTA
+  OTRO
+}
+
+enum Clasificacion {
+  PUBLICO
+  INTERNO
+  CONFIDENCIAL
+  SECRETO
+}
+
+model DocumentoVersion {
+  id                  String   @id @default(uuid()) @db.Uuid
+  documento_id        String   @db.Uuid
+  version             Int
+  contenido           String?  @db.Text
+  hash_sha256         String
+  storage_path        String
+  cambios_descripcion String?
+  fecha_creacion      DateTime @default(now())
+
+  // Relaciones
+  documento Documento @relation(fields: [documento_id], references: [id], onDelete: Cascade)
+
+  @@unique([documento_id, version])
+  @@index([documento_id])
+  @@map("documentos_versiones")
+}
+
+model Expediente {
+  id                  String            @id @default(uuid()) @db.Uuid
+  codigo              String            @unique
+  nombre              String
+  descripcion         String?           @db.Text
+  fecha_apertura      DateTime          @default(now())
+  fecha_cierre        DateTime?
+  estado              EstadoExpediente  @default(ABIERTO)
+  serie_documental    String?
+  subserie_documental String?
+
+  // Relaciones
+  documentos Documento[]
+
+  @@index([codigo])
+  @@index([estado])
+  @@map("expedientes")
+}
+
+enum EstadoExpediente {
+  ABIERTO
+  CERRADO
+  ARCHIVADO
+  DISPOSICION_FINAL
+}
+
+// ============================================
+// TRÁMITES Y WORKFLOWS
+// ============================================
+
+model Tramite {
+  id                     String        @id @default(uuid()) @db.Uuid
+  documento_id           String        @db.Uuid
+  workflow_id            String?       @db.Uuid
+  estado                 EstadoTramite @default(INICIADO)
+  prioridad              Prioridad     @default(NORMAL)
+  fecha_inicio           DateTime      @default(now())
+  fecha_limite           DateTime
+  fecha_completado       DateTime?
+  sla_status             SLAStatus     @default(ON_TIME)
+  dependencia_origen_id  String        @db.Uuid
+  dependencia_destino_id String        @db.Uuid
+  usuario_asignado_id    String?       @db.Uuid
+  observaciones          String?       @db.Text
+
+  // Relaciones
+  documento           Documento   @relation(fields: [documento_id], references: [id])
+  workflow            Workflow?   @relation(fields: [workflow_id], references: [id])
+  dependencia_origen  Dependencia @relation("TramiteOrigen", fields: [dependencia_origen_id], references: [id])
+  dependencia_destino Dependencia @relation("TramiteDestino", fields: [dependencia_destino_id], references: [id])
+  usuario_asignado    Usuario?    @relation(fields: [usuario_asignado_id], references: [id])
+  tareas              Tarea[]
+
+  @@index([documento_id])
+  @@index([estado])
+  @@index([fecha_limite])
+  @@index([sla_status])
+  @@index([usuario_asignado_id])
+  @@map("tramites")
+}
+
+enum EstadoTramite {
+  INICIADO
+  EN_PROCESO
+  PENDIENTE
+  COMPLETADO
+  CANCELADO
+  RECHAZADO
+}
+
+enum Prioridad {
+  BAJA
+  NORMAL
+  ALTA
+  URGENTE
+}
+
+enum SLAStatus {
+  ON_TIME
+  AT_RISK
+  OVERDUE
+}
+
+model Workflow {
+  id              String   @id @default(uuid()) @db.Uuid
+  nombre          String
+  descripcion     String?  @db.Text
+  definicion_bpmn Json // XML BPMN 2.0 serializado
+  activo          Boolean  @default(true)
+  fecha_creacion  DateTime @default(now())
+
+  // Relaciones
+  tramites Tramite[]
+  tareas   Tarea[]
+
+  @@map("workflows")
+}
+
+model Tarea {
+  id               String      @id @default(uuid()) @db.Uuid
+  tramite_id       String      @db.Uuid
+  workflow_id      String?     @db.Uuid
+  nombre           String
+  descripcion      String?     @db.Text
+  tipo             TipoTarea
+  estado           EstadoTarea @default(PENDIENTE)
+  fecha_creacion   DateTime    @default(now())
+  fecha_limite     DateTime?
+  fecha_completado DateTime?
+
+  // Relaciones
+  tramite  Tramite   @relation(fields: [tramite_id], references: [id], onDelete: Cascade)
+  workflow Workflow? @relation(fields: [workflow_id], references: [id])
+
+  @@index([tramite_id])
+  @@index([estado])
+  @@map("tareas")
+}
+
+enum TipoTarea {
+  REVISION
+  APROBACION
+  FIRMA
+  VALIDACION
+  NOTIFICACION
+  OTRO
+}
+
+enum EstadoTarea {
+  PENDIENTE
+  EN_PROCESO
+  COMPLETADA
+  CANCELADA
+}
+
+// ============================================
+// FIRMAS DIGITALES
+// ============================================
+
+model Firma {
+  id            String    @id @default(uuid()) @db.Uuid
+  documento_id  String    @db.Uuid
+  usuario_id    String    @db.Uuid
+  tipo          TipoFirma
+  firma_digital String    @db.Text
+  certificado   String?   @db.Text
+  timestamp_tsa String? // Timestamp Authority
+  fecha_firma   DateTime  @default(now())
+  valida        Boolean   @default(true)
+
+  // Relaciones
+  documento Documento @relation(fields: [documento_id], references: [id], onDelete: Cascade)
+  usuario   Usuario   @relation(fields: [usuario_id], references: [id])
+
+  @@index([documento_id])
+  @@index([usuario_id])
+  @@map("firmas")
+}
+
+enum TipoFirma {
+  FIEL // Firma Electrónica Avanzada (México)
+  SIMPLE
+  DIGITAL
+  POST_QUANTUM // ML-DSA
+}
+
+// ============================================
+// BLOCKCHAIN
+// ============================================
+
+model PruebaBlockchain {
+  id                   String   @id @default(uuid()) @db.Uuid
+  documento_id         String   @unique @db.Uuid
+  hash_documento       String
+  merkle_root          String
+  blockchain           String // 'ethereum' | 'polygon'
+  tx_hash              String   @unique
+  block_number         Int
+  timestamp_blockchain DateTime
+  gas_cost_usd         Decimal  @db.Decimal(10, 2)
+  verificacion_url     String
+
+  // Relaciones
+  documento Documento @relation(fields: [documento_id], references: [id], onDelete: Cascade)
+
+  @@index([tx_hash])
+  @@map("pruebas_blockchain")
+}
+
+// ============================================
+// AUDITORÍA
+// ============================================
+
+model Auditoria {
+  id                 String          @id @default(uuid()) @db.Uuid
+  usuario_id         String          @db.Uuid
+  accion             AccionAuditoria
+  recurso_tipo       String
+  recurso_id         String          @db.Uuid
+  ip_address         String?
+  user_agent         String?
+  resultado          String          @default("success") // 'success' | 'failure'
+  detalles           Json?
+  timestamp          DateTime        @default(now()) @db.Timestamptz
+  merkle_root        String?
+  blockchain_tx_hash String?
+
+  // Relaciones
+  usuario Usuario @relation(fields: [usuario_id], references: [id])
+
+  @@index([usuario_id])
+  @@index([accion])
+  @@index([recurso_tipo, recurso_id])
+  @@index([timestamp])
+  @@map("auditoria")
+}
+
+enum AccionAuditoria {
+  CREATE
+  READ
+  UPDATE
+  DELETE
+  SHARE
+  DOWNLOAD
+  PRINT
+  SIGN
+  APPROVE
+  REJECT
+}
+
+// ============================================
+// ETIQUETAS Y METADATOS
+// ============================================
+
+model Etiqueta {
+  id     String @id @default(uuid()) @db.Uuid
+  nombre String @unique
+  color  String?
+
+  // Relaciones
+  documentos DocumentoEtiqueta[]
+
+  @@map("etiquetas")
+}
+
+model DocumentoEtiqueta {
+  documento_id String @db.Uuid
+  etiqueta_id  String @db.Uuid
+
+  // Relaciones
+  documento Documento @relation(fields: [documento_id], references: [id], onDelete: Cascade)
+  etiqueta  Etiqueta  @relation(fields: [etiqueta_id], references: [id], onDelete: Cascade)
+
+  @@id([documento_id, etiqueta_id])
+  @@map("documentos_etiquetas")
+}
+
+// ============================================
+// CONFIGURACIÓN
+// ============================================
+
+model Configuracion {
+  id                  String   @id @default(uuid()) @db.Uuid
+  clave               String   @unique
+  valor               Json
+  descripcion         String?
+  fecha_actualizacion DateTime @updatedAt
+
+  @@map("configuracion")
+}
