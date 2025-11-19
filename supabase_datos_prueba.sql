@@ -930,26 +930,26 @@ INSERT INTO tbl_documento_saliente (
     estatus
 )
 SELECT
-    NOW() - ((ROW_NUMBER() OVER ()) || ' days')::INTERVAL,
+    NOW() - ((ROW_NUMBER() OVER ())::INT || ' days')::INTERVAL,
     ua.id_ua,
     u.id_usuario,
-    'Destinatario ' || chr(65 + ((ROW_NUMBER() OVER ()) % 26)),
+    'Destinatario ' || chr(65 + ((ROW_NUMBER() OVER ())::INT % 26)),
     'Director General',
-    CASE ((ROW_NUMBER() OVER ()) % 5)
+    CASE ((ROW_NUMBER() OVER ())::INT % 5)
         WHEN 0 THEN 'Instituto Mexicano del Seguro Social'
         WHEN 1 THEN 'Secretaría de Educación Pública'
         WHEN 2 THEN 'Comisión Nacional de Derechos Humanos'
         WHEN 3 THEN 'Instituto Nacional de Salud Pública'
         ELSE 'Secretaría de Hacienda y Crédito Público'
     END,
-    CASE ((ROW_NUMBER() OVER ()) % 4)
+    CASE ((ROW_NUMBER() OVER ())::INT % 4)
         WHEN 0 THEN 'Respuesta a solicitud de información estadística'
         WHEN 1 THEN 'Informe de actividades del mes'
         WHEN 2 THEN 'Invitación a evento de salud pública'
         ELSE 'Notificación de actualización de procedimientos'
     END,
     (SELECT id_valor_catalogo FROM cat_valores_catalogo WHERE tipo_catalogo = 'Tipo Documento' AND valor = 'Oficio' LIMIT 1),
-    CASE ((ROW_NUMBER() OVER ()) % 3)
+    CASE ((ROW_NUMBER() OVER ())::INT % 3)
         WHEN 0 THEN 'Enviado'
         WHEN 1 THEN 'En Revisión'
         ELSE 'Borrador'
