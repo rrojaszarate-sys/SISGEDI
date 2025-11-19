@@ -96,6 +96,7 @@ $RECYCLE.BIN/
 *.crt
 credentials.json
 service-account.json
+google-credentials.json
 
 # ============================================================================
 # Datos sensibles
