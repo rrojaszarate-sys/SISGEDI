@@ -2,9 +2,12 @@
   "name": "sisgedi",
   "version": "2.0.0",
   "description": "Sistema de Gestión de Documentación Integral - SISGEDI 2.0",
-  "main": "index.js",
   "type": "module",
   "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
     "seed": "tsx scripts/seed.ts",
     "seed:full": "tsx scripts/seed.ts --full",
     "seed:inventory": "tsx scripts/generate-inventory.ts",
@@ -23,20 +26,28 @@
   ],
   "author": "SISGEDI Team",
   "license": "MIT",
+  "dependencies": {
+    "next": "^14.0.4",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "@supabase/supabase-js": "^2.39.0",
+    "pg": "^8.11.3",
+    "dotenv": "^16.3.1",
+    "chalk": "^5.3.0",
+    "ora": "^8.0.1"
+  },
   "devDependencies": {
     "@types/node": "^20.10.0",
+    "@types/react": "^18.2.45",
+    "@types/react-dom": "^18.2.18",
     "@types/pg": "^8.10.9",
     "@faker-js/faker": "^8.3.1",
     "@vitest/ui": "^1.0.4",
     "typescript": "^5.3.3",
     "tsx": "^4.7.0",
     "vitest": "^1.0.4",
-    "@vitest/coverage-v8": "^1.0.4"
-  },
-  "dependencies": {
-    "pg": "^8.11.3",
-    "dotenv": "^16.3.1",
-    "chalk": "^5.3.0",
-    "ora": "^8.0.1"
+    "@vitest/coverage-v8": "^1.0.4",
+    "eslint": "^8.56.0",
+    "eslint-config-next": "^14.0.4"
   }
 }

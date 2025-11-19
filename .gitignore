@@ -27,6 +27,9 @@ dist/
 dist-ssr/
 build/
 *.local
+.next/
+out/
+next-env.d.ts
 
 # ============================================================================
 # Editores e IDEs
