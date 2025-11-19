@@ -38,7 +38,9 @@
     "ora": "^8.0.1",
     "lucide-react": "^0.294.0",
     "clsx": "^2.0.0",
-    "@google-cloud/vision": "^4.0.2"
+    "@google-cloud/vision": "^4.0.2",
+    "recharts": "^2.10.3",
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "@types/node": "^20.10.0",
