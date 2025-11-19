@@ -1,0 +1,42 @@
+{
+  "name": "sisgedi",
+  "version": "2.0.0",
+  "description": "Sistema de Gestión de Documentación Integral - SISGEDI 2.0",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "seed": "tsx scripts/seed.ts",
+    "seed:full": "tsx scripts/seed.ts --full",
+    "seed:inventory": "tsx scripts/generate-inventory.ts",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "test:ui": "vitest --ui",
+    "db:init": "psql -U postgres -f database_schema.sql",
+    "db:reset": "tsx scripts/reset-database.ts"
+  },
+  "keywords": [
+    "SISGEDI",
+    "gestión documental",
+    "gobierno",
+    "postgresql"
+  ],
+  "author": "SISGEDI Team",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "@types/pg": "^8.10.9",
+    "@faker-js/faker": "^8.3.1",
+    "@vitest/ui": "^1.0.4",
+    "typescript": "^5.3.3",
+    "tsx": "^4.7.0",
+    "vitest": "^1.0.4",
+    "@vitest/coverage-v8": "^1.0.4"
+  },
+  "dependencies": {
+    "pg": "^8.11.3",
+    "dotenv": "^16.3.1",
+    "chalk": "^5.3.0",
+    "ora": "^8.0.1"
+  }
+}
