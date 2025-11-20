@@ -7,11 +7,11 @@
 
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import Button from '@/components/ui/Button'
-import Input from '@/components/ui/Input'
-import Table from '@/components/ui/Table'
-import Modal, { ConfirmModal } from '@/components/ui/Modal'
-import Alert from '@/components/ui/Alert'
+import { Button } from '@/components/ui/Button'
+import { Input } from '@/components/ui/Input'
+import { Table } from '@/components/ui/Table'
+import { Modal, ConfirmModal } from '@/components/ui/Modal'
+import { Alert } from '@/components/ui/Alert'
 import {
   Package,
   Plus,
@@ -503,7 +503,8 @@ export default function InventarioPage() {
             Gestión de bienes muebles e inmuebles
           </p>
         </div>
-        <Button onClick={handleNew} icon={<Plus />}>
+        <Button onClick={handleNew}>
+          <Plus className="mr-2 h-4 w-4" />
           Registrar Bien
         </Button>
       </div>

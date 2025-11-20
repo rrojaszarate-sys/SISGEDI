@@ -7,9 +7,9 @@
 
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import Button from '@/components/ui/Button'
-import Input from '@/components/ui/Input'
-import Alert from '@/components/ui/Alert'
+import { Button } from '@/components/ui/Button'
+import { Input } from '@/components/ui/Input'
+import { Alert } from '@/components/ui/Alert'
 import {
   BarChart3,
   Download,
@@ -319,7 +319,8 @@ export default function ReportesPage() {
             Visualización de datos y métricas del sistema
           </p>
         </div>
-        <Button onClick={exportToExcel} icon={<Download />}>
+        <Button onClick={exportToExcel}>
+          <Download className="mr-2 h-4 w-4" />
           Exportar a Excel
         </Button>
       </div>

@@ -7,11 +7,11 @@
 
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import Button from '@/components/ui/Button'
-import Input from '@/components/ui/Input'
-import Table from '@/components/ui/Table'
-import Modal from '@/components/ui/Modal'
-import Alert from '@/components/ui/Alert'
+import { Button } from '@/components/ui/Button'
+import { Input } from '@/components/ui/Input'
+import { Table } from '@/components/ui/Table'
+import { Modal } from '@/components/ui/Modal'
+import { Alert } from '@/components/ui/Alert'
 import {
   Send,
   Plus,
@@ -442,7 +442,8 @@ export default function TurnadosPage() {
             Gestión de documentos turnados
           </p>
         </div>
-        <Button onClick={handleNew} icon={<Plus />}>
+        <Button onClick={handleNew}>
+          <Plus className="mr-2 h-4 w-4" />
           Turnar Documento
         </Button>
       </div>

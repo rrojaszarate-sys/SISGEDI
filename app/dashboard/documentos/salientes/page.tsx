@@ -7,11 +7,11 @@
 
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import Button from '@/components/ui/Button'
-import Input from '@/components/ui/Input'
-import Table from '@/components/ui/Table'
-import Modal from '@/components/ui/Modal'
-import Alert from '@/components/ui/Alert'
+import { Button } from '@/components/ui/Button'
+import { Input } from '@/components/ui/Input'
+import { Table } from '@/components/ui/Table'
+import { Modal } from '@/components/ui/Modal'
+import { Alert } from '@/components/ui/Alert'
 import {
   Send,
   Plus,
@@ -510,7 +510,7 @@ export default function DocumentosSalientesPage() {
           </h1>
           <p className="text-gray-600 mt-1">Gestión de documentos enviados</p>
         </div>
-        <Button onClick={handleNew} icon={<Plus />}>Registrar Documento</Button>
+        <Button onClick={handleNew}><Plus className="mr-2 h-4 w-4" />Registrar Documento</Button>
       </div>
 
       {error && <Alert type="error" message={error} onClose={() => setError(null)} />}

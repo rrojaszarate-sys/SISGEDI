@@ -8,9 +8,9 @@
 import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import Button from '@/components/ui/Button'
-import Alert from '@/components/ui/Alert'
-import Modal from '@/components/ui/Modal'
+import { Button } from '@/components/ui/Button'
+import { Alert } from '@/components/ui/Alert'
+import { Modal } from '@/components/ui/Modal'
 import {
   FileText,
   Calendar,
@@ -119,14 +119,9 @@ export default function DocumentoDetallePage() {
   }
 
   async function handleDownload() {
-    if (!documento?.archivo_url) return
-
-    try {
-      // Abrir archivo en nueva pestaña
-      window.open(documento.archivo_url, '_blank')
-    } catch (err: any) {
-      setError('Error al descargar archivo')
-    }
+    // TODO: Implementar descarga de anexos desde tbl_anexos
+    setError('Funcionalidad de descarga pendiente de implementar')
+    return
   }
 
   if (loading) {
@@ -144,9 +139,9 @@ export default function DocumentoDetallePage() {
         <Button
           variant="secondary"
           onClick={() => router.push('/dashboard/documentos/entrantes')}
-          icon={<ArrowLeft />}
           className="mt-4"
         >
+          <ArrowLeft className="mr-2 h-4 w-4" />
           Volver a la lista
         </Button>
       </div>
@@ -161,9 +156,9 @@ export default function DocumentoDetallePage() {
           <Button
             variant="ghost"
             onClick={() => router.push('/dashboard/documentos/entrantes')}
-            icon={<ArrowLeft />}
             size="sm"
           >
+            <ArrowLeft className="mr-2 h-4 w-4" />
             Volver
           </Button>
           <div>
@@ -179,14 +174,14 @@ export default function DocumentoDetallePage() {
           <Button
             variant="secondary"
             onClick={() => router.push(`/dashboard/documentos/entrantes?edit=${documento.id_documento}`)}
-            icon={<Edit2 />}
           >
+            <Edit2 className="mr-2 h-4 w-4" />
             Editar
           </Button>
           <Button
             onClick={() => setShowTurnadoModal(true)}
-            icon={<Send />}
           >
+            <Send className="mr-2 h-4 w-4" />
             Turnar
           </Button>
         </div>
@@ -411,20 +406,12 @@ export default function DocumentoDetallePage() {
                   variant="primary"
                   fullWidth
                   onClick={handleDownload}
-                  icon={<Download />}
                 >
+                  <Download className="mr-2 h-4 w-4" />
                   Descargar / Ver
                 </Button>
 
-                {documento.archivo_url.match(/\.(jpg|jpeg|png|gif)$/i) && (
-                  <div className="mt-4">
-                    <img
-                      src={documento.archivo_url}
-                      alt="Vista previa"
-                      className="w-full rounded-lg border border-gray-200"
-                    />
-                  </div>
-                )}
+                {/* TODO: Implementar vista previa de imágenes desde anexos */}
               </div>
             </div>
           )}

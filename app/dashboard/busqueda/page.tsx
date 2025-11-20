@@ -7,9 +7,9 @@
 
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import Button from '@/components/ui/Button'
-import Input from '@/components/ui/Input'
-import Alert from '@/components/ui/Alert'
+import { Button } from '@/components/ui/Button'
+import { Input } from '@/components/ui/Input'
+import { Alert } from '@/components/ui/Alert'
 import {
   Search,
   Filter,
@@ -316,8 +316,8 @@ export default function BusquedaGlobalPage() {
                 type="button"
                 variant="secondary"
                 onClick={handleExportResults}
-                icon={<Download />}
               >
+                <Download className="mr-2 h-4 w-4" />
                 Exportar
               </Button>
             )}
