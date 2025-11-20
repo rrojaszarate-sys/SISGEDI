@@ -210,12 +210,3 @@ export async function POST(request: NextRequest) {
     )
   }
 }
-
-// Configuración de Next.js para permitir archivos grandes
-export const config = {
-  api: {
-    bodyParser: {
-      sizeLimit: '50mb'
-    }
-  }
-}
