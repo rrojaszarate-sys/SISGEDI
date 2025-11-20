@@ -65,11 +65,11 @@ export default function ReportesPage() {
   useEffect(() => {
     // Establecer rango por defecto: últimos 6 meses
     const hoy = new Date()
-    const seisMe sesAntés = new Date()
-    seisMe sesAntés.setMonth(hoy.getMonth() - 6)
+    const seisMesesAntes = new Date()
+    seisMesesAntes.setMonth(hoy.getMonth() - 6)
 
     setFechaFin(hoy.toISOString().split('T')[0])
-    setFechaInicio(seisMe sesAntés.toISOString().split('T')[0])
+    setFechaInicio(seisMesesAntes.toISOString().split('T')[0])
 
     loadData()
   }, [])
@@ -283,8 +283,8 @@ export default function ReportesPage() {
     XLSX.utils.book_append_sheet(wb, wsInventario, 'Inventario')
 
     // Hoja 5: Documentos por Prioridad
-    const wsDocsP rioridad = XLSX.utils.json_to_sheet(data.documentosPorPrioridad)
-    XLSX.utils.book_append_sheet(wb, wsDocsP rioridad, 'Prioridades')
+    const wsDocsPrioridad = XLSX.utils.json_to_sheet(data.documentosPorPrioridad)
+    XLSX.utils.book_append_sheet(wb, wsDocsPrioridad, 'Prioridades')
 
     // Descargar
     XLSX.writeFile(wb, `reporte_sisgedi_${new Date().toISOString().split('T')[0]}.xlsx`)
