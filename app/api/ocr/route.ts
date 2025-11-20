@@ -17,6 +17,13 @@ try {
     })
   }
   // Opción 2: Usar JSON inline (producción - Vercel)
+  else if (process.env.VITE_GOOGLE_SERVICE_ACCOUNT_KEY) {
+    const credentials = JSON.parse(process.env.VITE_GOOGLE_SERVICE_ACCOUNT_KEY)
+    visionClient = new ImageAnnotatorClient({
+      credentials
+    })
+  }
+  // Opción 3: Fallback a GOOGLE_CLOUD_CREDENTIALS_JSON
   else if (process.env.GOOGLE_CLOUD_CREDENTIALS_JSON) {
     const credentials = JSON.parse(process.env.GOOGLE_CLOUD_CREDENTIALS_JSON)
     visionClient = new ImageAnnotatorClient({
