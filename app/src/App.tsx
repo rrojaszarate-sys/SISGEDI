@@ -48,29 +48,31 @@ function App() {
   // Mostrar error si Supabase no esta configurado
   if (!isSupabaseConfigured) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
-        <Card className="max-w-lg mx-4">
+      <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-guinda-50 via-white to-guinda-100">
+        <Card className="max-w-lg mx-4 border border-guinda-200 shadow-xl">
           <CardBody className="text-center p-8">
-            <div className="text-6xl mb-4">⚠️</div>
-            <h1 className="text-2xl font-bold text-gray-800 mb-4">
+            <div className="bg-guinda-100 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4">
+              <span className="text-4xl">⚠️</span>
+            </div>
+            <h1 className="text-2xl font-bold text-guinda-800 mb-4">
               SISGEDI - Configuracion Requerida
             </h1>
-            <p className="text-gray-600 mb-4">
+            <p className="text-guinda-600 mb-4">
               Las variables de entorno de Supabase no estan configuradas.
             </p>
-            <div className="bg-gray-100 rounded-lg p-4 text-left text-sm mb-4">
-              <p className="font-mono text-gray-700 mb-2">
+            <div className="bg-guinda-50 border border-guinda-200 rounded-lg p-4 text-left text-sm mb-4">
+              <p className="font-mono text-guinda-700 mb-2">
                 <strong>En Vercel, agrega estas variables:</strong>
               </p>
-              <p className="font-mono text-blue-600">VITE_SUPABASE_URL</p>
-              <p className="font-mono text-blue-600">VITE_SUPABASE_ANON_KEY</p>
+              <p className="font-mono text-guinda-600">VITE_SUPABASE_URL</p>
+              <p className="font-mono text-guinda-600">VITE_SUPABASE_ANON_KEY</p>
             </div>
             <p className="text-sm text-gray-500">
               Encuentra estos valores en tu dashboard de Supabase → Settings → API
             </p>
             <Button
               color="primary"
-              className="mt-4"
+              className="mt-4 bg-guinda-700 hover:bg-guinda-800"
               onPress={() => window.open('https://supabase.com/dashboard', '_blank')}
             >
               Ir a Supabase Dashboard
@@ -83,10 +85,10 @@ function App() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-50">
+      <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-guinda-50 via-white to-guinda-100">
         <div className="text-center">
           <Spinner size="lg" color="primary" />
-          <p className="mt-4 text-gray-600">Cargando SISGEDI...</p>
+          <p className="mt-4 text-guinda-600 font-medium">Cargando SISGEDI...</p>
         </div>
       </div>
     );
