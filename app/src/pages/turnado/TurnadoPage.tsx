@@ -13,15 +13,80 @@ import {
   Chip,
 } from '@nextui-org/react';
 import { ArrowLeft, Send, FileText, Calendar } from 'lucide-react';
-import { supabase } from '../../lib/supabase';
+import { supabase, DEV_MODE } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import { toast } from 'sonner';
 import type { UnidadAdministrativa } from '../../types/database';
 
+// Mock data for development mode
+const MOCK_DOCUMENTO = {
+  id_doc_entrante: 'mock-doc-001',
+  folio_interno: 'DOC-2025-0156',
+  fecha_registro: new Date().toISOString(),
+  asunto: 'Solicitud de informacion sobre programa de apoyo social 2025 para comunidades rurales',
+  remitente_nombre: 'Lic. Maria Garcia Lopez',
+  cat_unidad_administrativa: {
+    id_ua: 'mock-ua-1',
+    codigo_ua: 'DG-001',
+    nombre_ua: 'Direccion General de Correspondencia',
+  },
+};
+
+const MOCK_UNIDADES: UnidadAdministrativa[] = [
+  {
+    id_ua: 'mock-ua-2',
+    codigo_ua: 'DPS-001',
+    nombre_ua: 'Direccion de Programas Sociales',
+    nivel_jerarquico: 2,
+    id_ua_superior: null,
+    direccion: null,
+    telefono: null,
+    extension: null,
+    estatus: true,
+    fecha_creacion: '',
+  },
+  {
+    id_ua: 'mock-ua-3',
+    codigo_ua: 'DAF-001',
+    nombre_ua: 'Direccion de Administracion y Finanzas',
+    nivel_jerarquico: 2,
+    id_ua_superior: null,
+    direccion: null,
+    telefono: null,
+    extension: null,
+    estatus: true,
+    fecha_creacion: '',
+  },
+  {
+    id_ua: 'mock-ua-4',
+    codigo_ua: 'DJ-001',
+    nombre_ua: 'Direccion Juridica',
+    nivel_jerarquico: 2,
+    id_ua_superior: null,
+    direccion: null,
+    telefono: null,
+    extension: null,
+    estatus: true,
+    fecha_creacion: '',
+  },
+  {
+    id_ua: 'mock-ua-5',
+    codigo_ua: 'OT-001',
+    nombre_ua: 'Oficina del Titular',
+    nivel_jerarquico: 1,
+    id_ua_superior: null,
+    direccion: null,
+    telefono: null,
+    extension: null,
+    estatus: true,
+    fecha_creacion: '',
+  },
+];
+
 export default function TurnadoPage() {
   const { docId } = useParams();
   const navigate = useNavigate();
-  const { usuario } = useAuth();
+  const { usuario, isDevMode } = useAuth();
   const [documento, setDocumento] = useState<any>(null);
   const [unidades, setUnidades] = useState<UnidadAdministrativa[]>([]);
   const [loading, setLoading] = useState(false);
@@ -41,6 +106,13 @@ export default function TurnadoPage() {
   }, [docId]);
 
   const fetchDocumento = async () => {
+    // En modo desarrollo, usar datos mock
+    if (isDevMode || DEV_MODE) {
+      await new Promise(resolve => setTimeout(resolve, 300));
+      setDocumento(MOCK_DOCUMENTO);
+      return;
+    }
+
     const { data } = await supabase
       .from('tbl_documento_entrante')
       .select('*, cat_unidad_administrativa(*)')
@@ -50,6 +122,12 @@ export default function TurnadoPage() {
   };
 
   const fetchUnidades = async () => {
+    // En modo desarrollo, usar datos mock
+    if (isDevMode || DEV_MODE) {
+      setUnidades(MOCK_UNIDADES);
+      return;
+    }
+
     const { data } = await supabase
       .from('cat_unidad_administrativa')
       .select('*')
@@ -70,6 +148,16 @@ export default function TurnadoPage() {
     const dias = parseInt(formData.dias_para_atencion) || 5;
     const fechaVencimiento = new Date();
     fechaVencimiento.setDate(fechaVencimiento.getDate() + dias);
+
+    // En modo desarrollo, simular turnado
+    if (isDevMode || DEV_MODE) {
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      const unidadDestino = unidades.find(u => u.id_ua === formData.id_ua_destino);
+      toast.success(`Documento turnado a ${unidadDestino?.nombre_ua || 'unidad destino'} (modo desarrollo)`);
+      navigate('/turnado');
+      setLoading(false);
+      return;
+    }
 
     const { error } = await supabase.from('tbl_turnado').insert({
       id_doc_entrante: docId,
@@ -107,52 +195,65 @@ export default function TurnadoPage() {
   };
 
   return (
-    <div className="max-w-3xl mx-auto space-y-6">
+    <div className="max-w-3xl mx-auto space-y-4 sm:space-y-6">
       {/* Header */}
-      <div className="flex items-center gap-4">
-        <Button isIconOnly variant="light" onPress={() => navigate(-1)}>
-          <ArrowLeft size={20} />
+      <div className="flex items-center gap-3 sm:gap-4">
+        <Button
+          isIconOnly
+          variant="light"
+          onPress={() => navigate(-1)}
+          size="sm"
+        >
+          <ArrowLeft size={20} style={{ color: 'var(--theme-primary-600)' }} />
         </Button>
         <div>
-          <h1 className="text-2xl font-bold flex items-center gap-2">
-            <Send className="text-primary" />
+          <h1
+            className="text-xl sm:text-2xl font-bold flex items-center gap-2"
+            style={{ color: 'var(--theme-primary-800)' }}
+          >
+            <Send style={{ color: 'var(--theme-primary-600)' }} />
             Turnar Documento
           </h1>
-          <p className="text-gray-500">Asignar documento a otra unidad</p>
+          <p className="text-xs sm:text-sm text-gray-500">Asignar documento a otra unidad</p>
         </div>
       </div>
 
       {/* Info del documento */}
       {documento && (
-        <Card>
-          <CardHeader>
-            <p className="font-semibold flex items-center gap-2">
-              <FileText size={18} />
+        <Card className="shadow-sm">
+          <CardHeader className="px-4 sm:px-6 py-3 sm:py-4">
+            <p className="font-semibold flex items-center gap-2 text-sm sm:text-base" style={{ color: 'var(--theme-primary-700)' }}>
+              <FileText size={18} style={{ color: 'var(--theme-primary-600)' }} />
               Documento a Turnar
             </p>
           </CardHeader>
           <Divider />
-          <CardBody>
-            <div className="grid grid-cols-2 gap-4">
+          <CardBody className="p-4 sm:p-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <p className="text-sm text-gray-500">Folio</p>
-                <p className="font-mono font-medium">{documento.folio_interno}</p>
+                <p className="text-xs sm:text-sm text-gray-500">Folio</p>
+                <p
+                  className="font-mono font-medium text-sm sm:text-base"
+                  style={{ color: 'var(--theme-primary-700)' }}
+                >
+                  {documento.folio_interno}
+                </p>
               </div>
               <div>
-                <p className="text-sm text-gray-500">Fecha Registro</p>
-                <p>{formatDate(documento.fecha_registro)}</p>
+                <p className="text-xs sm:text-sm text-gray-500">Fecha Registro</p>
+                <p className="text-sm sm:text-base">{formatDate(documento.fecha_registro)}</p>
               </div>
-              <div className="col-span-2">
-                <p className="text-sm text-gray-500">Asunto</p>
-                <p>{documento.asunto}</p>
-              </div>
-              <div>
-                <p className="text-sm text-gray-500">Remitente</p>
-                <p>{documento.remitente_nombre || '-'}</p>
+              <div className="sm:col-span-2">
+                <p className="text-xs sm:text-sm text-gray-500">Asunto</p>
+                <p className="text-sm sm:text-base">{documento.asunto}</p>
               </div>
               <div>
-                <p className="text-sm text-gray-500">Unidad de Registro</p>
-                <Chip size="sm">{documento.cat_unidad_administrativa?.codigo_ua}</Chip>
+                <p className="text-xs sm:text-sm text-gray-500">Remitente</p>
+                <p className="text-sm sm:text-base">{documento.remitente_nombre || '-'}</p>
+              </div>
+              <div>
+                <p className="text-xs sm:text-sm text-gray-500">Unidad de Registro</p>
+                <Chip size="sm" variant="flat">{documento.cat_unidad_administrativa?.codigo_ua}</Chip>
               </div>
             </div>
           </CardBody>
@@ -160,12 +261,14 @@ export default function TurnadoPage() {
       )}
 
       {/* Formulario de turnado */}
-      <Card>
-        <CardHeader>
-          <p className="font-semibold">Datos del Turnado</p>
+      <Card className="shadow-sm">
+        <CardHeader className="px-4 sm:px-6 py-3 sm:py-4">
+          <p className="font-semibold text-sm sm:text-base" style={{ color: 'var(--theme-primary-700)' }}>
+            Datos del Turnado
+          </p>
         </CardHeader>
         <Divider />
-        <CardBody className="space-y-4">
+        <CardBody className="space-y-4 p-4 sm:p-6">
           <Select
             label="Unidad Destino"
             placeholder="Selecciona la unidad a turnar"
@@ -174,11 +277,12 @@ export default function TurnadoPage() {
               setFormData({ ...formData, id_ua_destino: Array.from(keys)[0] as string })
             }
             isRequired
+            size="sm"
           >
             {unidades.map((ua) => (
               <SelectItem key={ua.id_ua} textValue={ua.nombre_ua}>
                 <div>
-                  <p className="font-medium">{ua.nombre_ua}</p>
+                  <p className="font-medium text-sm">{ua.nombre_ua}</p>
                   <p className="text-xs text-gray-500">{ua.codigo_ua}</p>
                 </div>
               </SelectItem>
@@ -186,10 +290,11 @@ export default function TurnadoPage() {
           </Select>
 
           <Input
-            label="Instrucción"
-            placeholder="Ej: Para su conocimiento y atención"
+            label="Instruccion"
+            placeholder="Ej: Para su conocimiento y atencion"
             value={formData.instruccion}
             onValueChange={(v) => setFormData({ ...formData, instruccion: v })}
+            size="sm"
           />
 
           <Textarea
@@ -197,25 +302,32 @@ export default function TurnadoPage() {
             placeholder="Observaciones adicionales..."
             value={formData.observaciones}
             onValueChange={(v) => setFormData({ ...formData, observaciones: v })}
+            minRows={3}
+            size="sm"
           />
 
           <Input
             type="number"
-            label="Días para Atención"
+            label="Dias para Atencion"
             placeholder="5"
             value={formData.dias_para_atencion}
             onValueChange={(v) => setFormData({ ...formData, dias_para_atencion: v })}
             min={1}
             max={90}
             startContent={<Calendar size={18} className="text-gray-400" />}
-            description="Número de días hábiles para dar atención"
+            description="Numero de dias habiles para dar atencion"
+            size="sm"
           />
         </CardBody>
       </Card>
 
       {/* Botones */}
-      <div className="flex justify-end gap-3">
-        <Button variant="light" onPress={() => navigate(-1)}>
+      <div className="flex flex-col-reverse sm:flex-row justify-end gap-3">
+        <Button
+          variant="light"
+          onPress={() => navigate(-1)}
+          className="w-full sm:w-auto"
+        >
           Cancelar
         </Button>
         <Button
@@ -223,10 +335,19 @@ export default function TurnadoPage() {
           startContent={<Send size={18} />}
           onPress={handleSubmit}
           isLoading={loading}
+          style={{ backgroundColor: 'var(--theme-primary-700)' }}
+          className="w-full sm:w-auto"
         >
           Turnar Documento
         </Button>
       </div>
+
+      {/* Info de modo desarrollo */}
+      {(isDevMode || DEV_MODE) && (
+        <p className="text-xs text-center text-gray-400">
+          Modo desarrollo - El turnado no se guardara en base de datos
+        </p>
+      )}
     </div>
   );
 }
