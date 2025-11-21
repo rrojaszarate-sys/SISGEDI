@@ -129,6 +129,27 @@ export const THEME_PALETTES = {
       800: '#1e293b',
       900: '#0f172a'
     }
+  },
+  // Alias "red" apunta a los mismos colores que guinda
+  red: {
+    name: 'Rojo Institucional',
+    primary: '#9a1f1f',
+    secondary: '#d9a316',
+    accent: '#c22a2a',
+    colors: ['#fdf2f2', '#9a1f1f', '#801d1d', '#6b1e1e'],
+    description: 'Estilo gobierno mexicano',
+    shades: {
+      50: '#fdf2f2',
+      100: '#fde3e3',
+      200: '#fbcccc',
+      300: '#f8a8a8',
+      400: '#f17575',
+      500: '#e54949',
+      600: '#c22a2a',
+      700: '#9a1f1f',
+      800: '#801d1d',
+      900: '#6b1e1e'
+    }
   }
 } as const;
 
