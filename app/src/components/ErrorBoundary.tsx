@@ -1,4 +1,4 @@
-import React, { Component, ErrorInfo, ReactNode } from 'react';
+import { Component, type ErrorInfo, type ReactNode } from 'react';
 import { Card, CardBody, Button } from '@nextui-org/react';
 import { DEV_MODE } from '../lib/supabase';
 
