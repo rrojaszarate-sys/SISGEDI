@@ -1,0 +1,153 @@
+# ============================================================================
+# VARIABLES DE ENTORNO PARA VERCEL - SISGEDI 2.0
+# ============================================================================
+#
+# INSTRUCCIONES:
+# 1. Ve a tu proyecto en Vercel
+# 2. Settings → Environment Variables
+# 3. Copia y pega cada variable reemplazando los valores de ejemplo
+# 4. Asegúrate de seleccionar "Production", "Preview" y "Development"
+# 5. Haz clic en "Save" después de agregar todas las variables
+#
+# ============================================================================
+
+# ============================================================================
+# VARIABLES CRÍTICAS (OBLIGATORIAS) - Reemplaza con tus valores reales
+# ============================================================================
+
+NEXT_PUBLIC_SUPABASE_URL=https://xxxxx.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+
+GOOGLE_CLOUD_PROJECT_ID=tu-proyecto-id
+GOOGLE_CLOUD_CREDENTIALS_JSON={"type":"service_account","project_id":"tu-proyecto","private_key_id":"xxx","private_key":"-----BEGIN PRIVATE KEY-----\nxxx\n-----END PRIVATE KEY-----\n","client_email":"xxx@xxx.iam.gserviceaccount.com","client_id":"xxx","auth_uri":"https://accounts.google.com/o/oauth2/auth","token_uri":"https://oauth2.googleapis.com/token","auth_provider_x509_cert_url":"https://www.googleapis.com/oauth2/v1/certs","client_x509_cert_url":"xxx"}
+
+# ============================================================================
+# STORAGE BUCKETS (OBLIGATORIAS)
+# ============================================================================
+
+STORAGE_BUCKET_DOCUMENTOS=documentos
+STORAGE_BUCKET_DOCUMENTOS_SALIENTES=documentos-salientes
+STORAGE_BUCKET_ACUSES=acuses
+STORAGE_BUCKET_INVENTARIO=inventario
+STORAGE_BUCKET_FIRMAS=firmas
+
+# ============================================================================
+# CONFIGURACIÓN DE APP (OBLIGATORIAS)
+# ============================================================================
+
+NODE_ENV=production
+NEXT_PUBLIC_APP_NAME=SISGEDI 2.0
+NEXT_PUBLIC_APP_VERSION=2.0.0
+NEXT_PUBLIC_APP_URL=https://tu-app.vercel.app
+NEXT_PUBLIC_LOCALE=es-MX
+NEXT_PUBLIC_TIMEZONE=America/Mexico_City
+
+# ============================================================================
+# SEGURIDAD (OBLIGATORIAS)
+# ============================================================================
+
+SESSION_TIMEOUT=3600
+SESSION_REFRESH_THRESHOLD=300
+COOKIE_SECURE=true
+COOKIE_SAME_SITE=lax
+
+# ============================================================================
+# FEATURES FLAGS (OPCIONALES - Recomendadas)
+# ============================================================================
+
+FEATURE_OCR_ENABLED=true
+FEATURE_DIGITAL_SIGNATURE=true
+FEATURE_NOTIFICATIONS=false
+FEATURE_ANALYTICS=false
+FEATURE_EXPORT_EXCEL=true
+FEATURE_EXPORT_PDF=true
+
+# ============================================================================
+# LÍMITES DE ARCHIVOS (OPCIONALES - Bytes)
+# ============================================================================
+
+MAX_FILE_SIZE_DOCUMENTOS=52428800
+MAX_FILE_SIZE_DOCUMENTOS_SALIENTES=10485760
+MAX_FILE_SIZE_ACUSES=5242880
+MAX_FILE_SIZE_INVENTARIO=10485760
+MAX_FILE_SIZE_FIRMAS=1048576
+
+# ============================================================================
+# CONFIGURACIÓN OCR (OPCIONALES)
+# ============================================================================
+
+OCR_LANGUAGE_HINTS=es,en
+OCR_MIN_CONFIDENCE=0.7
+OCR_ENABLE_TEXT_DETECTION=true
+OCR_ENABLE_DOCUMENT_TEXT_DETECTION=true
+
+# ============================================================================
+# MIME TYPES PERMITIDOS (OPCIONALES)
+# ============================================================================
+
+ALLOWED_MIME_DOCUMENTOS=application/pdf,image/*,application/msword,application/vnd.openxmlformats-officedocument.*
+ALLOWED_MIME_DOCUMENTOS_SALIENTES=application/pdf
+ALLOWED_MIME_ACUSES=application/pdf,image/*
+ALLOWED_MIME_INVENTARIO=image/*
+ALLOWED_MIME_FIRMAS=application/x-pkcs12,application/x-x509-ca-cert
+
+# ============================================================================
+# RATE LIMITING (OPCIONALES)
+# ============================================================================
+
+RATE_LIMIT_MAX_REQUESTS=100
+RATE_LIMIT_WINDOW_MS=900000
+
+# ============================================================================
+# LOGGING (OPCIONALES)
+# ============================================================================
+
+LOG_LEVEL=info
+LOG_SQL_QUERIES=false
+
+# ============================================================================
+# NOTAS IMPORTANTES
+# ============================================================================
+#
+# GOOGLE_CLOUD_CREDENTIALS_JSON:
+# - DEBE estar en UNA SOLA LÍNEA (sin saltos de línea)
+# - Para convertir tu archivo JSON a una línea:
+#   cat google-credentials.json | jq -c '.'
+# - O usa un minificador online: https://jsonformatter.org/json-minifier
+#
+# NEXT_PUBLIC_APP_URL:
+# - Reemplaza con tu URL de Vercel después del primer deployment
+# - Ejemplo: https://sisgedi-xxxxx.vercel.app
+# - O tu dominio personalizado si lo configuraste
+#
+# SUPABASE_SERVICE_ROLE_KEY:
+# - Esta es una clave PRIVADA, nunca la expongas públicamente
+# - Solo debe usarse en server-side (API routes, server actions)
+#
+# VALORES DE EJEMPLO:
+# - Todos los valores que empiezan con "xxxxx" o "tu-" deben ser reemplazados
+# - Las URLs de ejemplo deben ser reemplazadas por las reales
+# - Los JWT de ejemplo (eyJhbG...) deben ser reemplazados por los reales
+#
+# ENVIRONMENTS:
+# - Aplica estas variables a: Production, Preview y Development
+# - Puedes usar valores diferentes para cada environment si lo necesitas
+#
+# ============================================================================
+
+# CHECKLIST ANTES DE DEPLOYMENT:
+# [ ] ✅ Reemplazaste NEXT_PUBLIC_SUPABASE_URL con tu URL real
+# [ ] ✅ Reemplazaste NEXT_PUBLIC_SUPABASE_ANON_KEY con tu key real
+# [ ] ✅ Reemplazaste SUPABASE_SERVICE_ROLE_KEY con tu key real
+# [ ] ✅ Reemplazaste GOOGLE_CLOUD_PROJECT_ID con tu project ID real
+# [ ] ✅ Reemplazaste GOOGLE_CLOUD_CREDENTIALS_JSON con tu JSON completo EN UNA LÍNEA
+# [ ] ✅ Los 5 buckets de storage están creados en Supabase
+# [ ] ✅ Los scripts SQL fueron ejecutados en Supabase
+# [ ] ✅ El usuario admin fue creado en Supabase
+# [ ] ✅ RLS está activado en todas las tablas
+# [ ] ✅ Cloud Vision API está habilitada en Google Cloud
+
+# ============================================================================
+# FIN
+# ============================================================================
