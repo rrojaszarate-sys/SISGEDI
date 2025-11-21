@@ -17,7 +17,6 @@ import {
   FileText,
   Send,
   Download,
-  Clock,
   User,
   Building2,
   Calendar,
@@ -218,7 +217,7 @@ export default function DetalleDocumentoPage() {
             <CardBody>
               {turnados.length > 0 ? (
                 <Accordion>
-                  {turnados.map((t, idx) => (
+                  {turnados.map((t) => (
                     <AccordionItem
                       key={t.id_turnado}
                       title={

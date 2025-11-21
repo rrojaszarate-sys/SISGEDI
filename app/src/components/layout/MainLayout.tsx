@@ -50,7 +50,7 @@ const catalogosItems = [
 ];
 
 export default function MainLayout() {
-  const { usuario, signOut, isAdmin, isAdminUA } = useAuth();
+  const { usuario, signOut, isAdminUA } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(true);
