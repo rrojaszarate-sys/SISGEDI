@@ -1,7 +1,9 @@
+import { useEffect } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from './contexts/AuthContext';
 import { Spinner, Card, CardBody, Button } from '@nextui-org/react';
-import { isSupabaseConfigured } from './lib/supabase';
+import { isSupabaseConfigured, DEV_MODE } from './lib/supabase';
+import NotFoundPage from './pages/NotFoundPage';
 
 // Layout
 import MainLayout from './components/layout/MainLayout';
@@ -44,6 +46,21 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 
 function App() {
   const { loading } = useAuth();
+
+  // Log de inicio en modo desarrollo
+  useEffect(() => {
+    if (DEV_MODE) {
+      console.log('');
+      console.log('==========================================');
+      console.log('SISGEDI 2.0 - APLICACION INICIADA');
+      console.log('==========================================');
+      console.log('Modo:', DEV_MODE ? 'DESARROLLO' : 'PRODUCCION');
+      console.log('Supabase configurado:', isSupabaseConfigured ? 'SI' : 'NO');
+      console.log('URL actual:', window.location.href);
+      console.log('==========================================');
+      console.log('');
+    }
+  }, []);
 
   // Mostrar error si Supabase no esta configurado
   if (!isSupabaseConfigured) {
@@ -148,8 +165,8 @@ function App() {
         <Route path="busqueda" element={<BusquedaPage />} />
       </Route>
 
-      {/* Ruta por defecto */}
-      <Route path="*" element={<Navigate to="/" replace />} />
+      {/* Ruta 404 */}
+      <Route path="*" element={<NotFoundPage />} />
     </Routes>
   );
 }
