@@ -2,6 +2,31 @@
 
 @theme {
   --font-sans: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+
+  /* Colores Guinda - Gobierno Mexicano */
+  --color-guinda-50: #fdf2f2;
+  --color-guinda-100: #fde3e3;
+  --color-guinda-200: #fbcccc;
+  --color-guinda-300: #f8a8a8;
+  --color-guinda-400: #f17575;
+  --color-guinda-500: #e54949;
+  --color-guinda-600: #c22a2a;
+  --color-guinda-700: #9a1f1f;
+  --color-guinda-800: #801d1d;
+  --color-guinda-900: #6b1e1e;
+  --color-guinda-950: #3a0c0c;
+
+  /* Colores Dorado - Institucional */
+  --color-dorado-50: #fdfaeb;
+  --color-dorado-100: #faf3c7;
+  --color-dorado-200: #f6e58b;
+  --color-dorado-300: #f0d04f;
+  --color-dorado-400: #e9bc24;
+  --color-dorado-500: #d9a316;
+  --color-dorado-600: #bb7d10;
+  --color-dorado-700: #965a11;
+  --color-dorado-800: #7c4815;
+  --color-dorado-900: #693b17;
 }
 
 /* ============================================================
