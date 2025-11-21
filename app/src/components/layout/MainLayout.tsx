@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import {
   Navbar,
   NavbarBrand,
@@ -38,9 +38,9 @@ import { ThemePalettePicker } from '../../shared/components/theme';
 
 const menuItems = [
   { key: 'dashboard', label: 'Inicio', icon: Home, path: '/' },
-  { key: 'documentos', label: 'Documentos Entrantes', icon: FileText, path: '/documentos' },
-  { key: 'turnado', label: 'Bandeja de Turnados', icon: Send, path: '/turnado' },
-  { key: 'salientes', label: 'Documentos Salientes', icon: FolderOpen, path: '/salientes' },
+  { key: 'documentos', label: 'Doc. Entrantes', icon: FileText, path: '/documentos' },
+  { key: 'turnado', label: 'Turnados', icon: Send, path: '/turnado' },
+  { key: 'salientes', label: 'Doc. Salientes', icon: FolderOpen, path: '/salientes' },
   { key: 'inventario', label: 'Inventario', icon: Package, path: '/inventario' },
   { key: 'busqueda', label: 'Busqueda', icon: Search, path: '/busqueda' },
 ];
@@ -52,10 +52,34 @@ const catalogosItems = [
 ];
 
 export default function MainLayout() {
-  const { usuario, signOut, isAdminUA } = useAuth();
+  const { usuario, signOut, isAdminUA, isDevMode } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+
+  // Detectar tamaño de pantalla
+  useEffect(() => {
+    const checkMobile = () => {
+      const mobile = window.innerWidth < 768;
+      setIsMobile(mobile);
+      // En desktop, sidebar abierto por defecto
+      if (!mobile) {
+        setSidebarOpen(true);
+      }
+    };
+
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
+  // Cerrar sidebar al cambiar de ruta en mobile
+  useEffect(() => {
+    if (isMobile) {
+      setSidebarOpen(false);
+    }
+  }, [location.pathname, isMobile]);
 
   const handleSignOut = async () => {
     await signOut();
@@ -68,6 +92,13 @@ export default function MainLayout() {
     return location.pathname.startsWith(path);
   };
 
+  const handleMenuClick = (path: string) => {
+    navigate(path);
+    if (isMobile) {
+      setSidebarOpen(false);
+    }
+  };
+
   return (
     <div className="min-h-screen" style={{ backgroundColor: 'var(--theme-bg-secondary)' }}>
       {/* Navbar superior */}
@@ -77,45 +108,56 @@ export default function MainLayout() {
         className="shadow-lg"
         style={{ backgroundColor: 'var(--theme-primary-700)' }}
       >
-        <NavbarBrand className="gap-3">
+        <NavbarBrand className="gap-2 sm:gap-3">
           <Button
             isIconOnly
             variant="light"
             className="text-white"
+            size="sm"
             onPress={() => setSidebarOpen(!sidebarOpen)}
           >
-            {sidebarOpen ? <X size={20} /> : <Menu size={20} />}
+            {sidebarOpen ? <X size={18} /> : <Menu size={18} />}
           </Button>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
             <div
-              className="p-2 rounded-lg"
+              className="p-1.5 sm:p-2 rounded-lg"
               style={{ backgroundColor: 'var(--theme-primary-600)' }}
             >
-              <FileText className="text-white" size={24} />
+              <FileText className="text-white w-5 h-5 sm:w-6 sm:h-6" />
             </div>
-            <div className="hidden sm:block">
-              <span className="font-bold text-xl text-white">SISGEDI</span>
-              <p className="text-xs text-white opacity-60">Gestion Documental Inteligente</p>
+            <div className="hidden xs:block sm:block">
+              <span className="font-bold text-base sm:text-xl text-white">SISGEDI</span>
+              <p className="text-[10px] sm:text-xs text-white opacity-60 hidden sm:block">Gestion Documental Inteligente</p>
             </div>
           </div>
         </NavbarBrand>
 
-        <NavbarContent justify="end" className="gap-2 sm:gap-4">
-          {/* Busqueda rapida */}
-          <NavbarItem className="hidden sm:flex">
+        <NavbarContent justify="end" className="gap-1 sm:gap-2 md:gap-4">
+          {/* Badge de modo desarrollo */}
+          {isDevMode && (
+            <NavbarItem className="hidden md:flex">
+              <span className="px-2 py-1 text-[10px] font-bold rounded bg-yellow-500 text-black">
+                DEV
+              </span>
+            </NavbarItem>
+          )}
+
+          {/* Busqueda rapida - solo desktop */}
+          <NavbarItem className="hidden lg:flex">
             <Button
               variant="flat"
               className="text-white"
+              size="sm"
               style={{ backgroundColor: 'var(--theme-primary-600)' }}
-              startContent={<Search size={18} />}
-              onPress={() => navigate('/busqueda')}
+              startContent={<Search size={16} />}
+              onPress={() => handleMenuClick('/busqueda')}
             >
               Buscar
             </Button>
           </NavbarItem>
 
-          {/* Selector de Tema */}
-          <NavbarItem className="hidden sm:flex">
+          {/* Selector de Tema - solo tablet+ */}
+          <NavbarItem className="hidden md:flex">
             <ThemePalettePicker />
           </NavbarItem>
 
@@ -126,8 +168,9 @@ export default function MainLayout() {
                 isIconOnly
                 variant="light"
                 className="text-white"
+                size="sm"
               >
-                <Bell size={20} />
+                <Bell size={18} />
               </Button>
             </Badge>
           </NavbarItem>
@@ -135,26 +178,32 @@ export default function MainLayout() {
           {/* Usuario */}
           <Dropdown placement="bottom-end">
             <DropdownTrigger>
-              <div className="flex items-center gap-2 cursor-pointer">
+              <div className="flex items-center gap-1 sm:gap-2 cursor-pointer">
                 <Avatar
                   size="sm"
                   name={usuario?.nombre_completo?.charAt(0) || 'U'}
                   style={{ backgroundColor: 'var(--theme-secondary)' }}
-                  className="text-white"
+                  className="text-white w-7 h-7 sm:w-8 sm:h-8"
                 />
-                <div className="hidden md:block text-left">
-                  <p className="text-sm font-medium text-white">{usuario?.nombre_completo}</p>
-                  <p className="text-xs text-white opacity-60">{usuario?.rol?.nombre_rol}</p>
+                <div className="hidden lg:block text-left max-w-[120px]">
+                  <p className="text-xs sm:text-sm font-medium text-white truncate">{usuario?.nombre_completo}</p>
+                  <p className="text-[10px] sm:text-xs text-white opacity-60 truncate">{usuario?.rol?.nombre_rol}</p>
                 </div>
-                <ChevronDown size={16} className="text-white" />
+                <ChevronDown size={14} className="text-white hidden sm:block" />
               </div>
             </DropdownTrigger>
             <DropdownMenu aria-label="Acciones de usuario">
               <DropdownItem key="profile" className="h-14 gap-2">
-                <p className="font-semibold" style={{ color: 'var(--theme-primary-700)' }}>
+                <p className="font-semibold text-sm" style={{ color: 'var(--theme-primary-700)' }}>
                   {usuario?.correo_institucional}
                 </p>
                 <p className="text-xs text-gray-500">{usuario?.unidad_administrativa?.nombre_ua}</p>
+              </DropdownItem>
+              {/* Theme picker en mobile */}
+              <DropdownItem key="theme" className="md:hidden">
+                <div className="py-1">
+                  <ThemePalettePicker />
+                </div>
               </DropdownItem>
               <DropdownItem
                 key="logout"
@@ -169,26 +218,36 @@ export default function MainLayout() {
         </NavbarContent>
       </Navbar>
 
-      <div className="flex">
+      <div className="flex relative">
+        {/* Overlay para cerrar sidebar en mobile */}
+        {isMobile && sidebarOpen && (
+          <div
+            className="fixed inset-0 bg-black/50 z-20"
+            onClick={() => setSidebarOpen(false)}
+          />
+        )}
+
         {/* Sidebar */}
         <aside
-          className={`${
-            sidebarOpen ? 'w-64' : 'w-0'
-          } bg-white transition-all duration-300 overflow-hidden min-h-[calc(100vh-64px)] shadow-sm`}
-          style={{ borderRight: '1px solid var(--theme-primary-200)' }}
+          className={`
+            ${isMobile ? 'fixed left-0 top-[64px] z-30' : 'relative'}
+            ${sidebarOpen ? (isMobile ? 'w-64' : 'w-56 lg:w-64') : 'w-0'}
+            bg-white transition-all duration-300 overflow-hidden min-h-[calc(100vh-64px)] shadow-lg
+          `}
+          style={{ borderRight: sidebarOpen ? '1px solid var(--theme-primary-200)' : 'none' }}
         >
           {/* Header del sidebar */}
           <div
-            className="p-4"
+            className="p-3 lg:p-4"
             style={{
               borderBottom: '1px solid var(--theme-primary-100)',
               backgroundColor: 'var(--theme-primary-50)'
             }}
           >
             <div className="flex items-center gap-2">
-              <Shield size={18} style={{ color: 'var(--theme-primary-600)' }} />
+              <Shield size={16} style={{ color: 'var(--theme-primary-600)' }} />
               <span
-                className="text-sm font-medium"
+                className="text-xs lg:text-sm font-medium"
                 style={{ color: 'var(--theme-primary-700)' }}
               >
                 Menu Principal
@@ -196,12 +255,12 @@ export default function MainLayout() {
             </div>
           </div>
 
-          <nav className="p-3 space-y-1">
+          <nav className="p-2 lg:p-3 space-y-1">
             {menuItems.map((item) => (
-              <Link
+              <button
                 key={item.key}
-                to={item.path}
-                className="flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200"
+                onClick={() => handleMenuClick(item.path)}
+                className="w-full flex items-center gap-2 lg:gap-3 px-3 lg:px-4 py-2.5 lg:py-3 rounded-lg transition-all duration-200 text-left"
                 style={
                   isActive(item.path)
                     ? {
@@ -224,23 +283,23 @@ export default function MainLayout() {
                   }
                 }}
               >
-                <item.icon size={20} />
-                <span className="font-medium">{item.label}</span>
-              </Link>
+                <item.icon size={18} />
+                <span className="font-medium text-sm">{item.label}</span>
+              </button>
             ))}
 
             {/* Separador */}
             <div
-              className="my-4"
+              className="my-3 lg:my-4"
               style={{ borderTop: '1px solid var(--theme-primary-100)' }}
             />
 
             {/* Catalogos - Solo admin */}
             {isAdminUA && (
               <>
-                <div className="px-4 py-2">
+                <div className="px-3 lg:px-4 py-2">
                   <span
-                    className="text-xs font-semibold uppercase tracking-wider"
+                    className="text-[10px] lg:text-xs font-semibold uppercase tracking-wider"
                     style={{ color: 'var(--theme-primary-400)' }}
                   >
                     Administracion
@@ -250,9 +309,9 @@ export default function MainLayout() {
                   <DropdownTrigger>
                     <Button
                       variant="light"
-                      className="w-full justify-start gap-3 px-4 py-3 h-auto text-gray-700"
-                      startContent={<Settings size={20} />}
-                      endContent={<ChevronDown size={16} />}
+                      className="w-full justify-start gap-2 lg:gap-3 px-3 lg:px-4 py-2.5 h-auto text-gray-700 text-sm"
+                      startContent={<Settings size={18} />}
+                      endContent={<ChevronDown size={14} />}
                     >
                       Catalogos
                     </Button>
@@ -267,7 +326,7 @@ export default function MainLayout() {
                             style={{ color: 'var(--theme-primary-600)' }}
                           />
                         }
-                        onPress={() => navigate(item.path)}
+                        onPress={() => handleMenuClick(item.path)}
                         className="text-gray-700"
                       >
                         {item.label}
@@ -277,9 +336,9 @@ export default function MainLayout() {
                 </Dropdown>
 
                 {/* Usuarios - Solo admin */}
-                <Link
-                  to="/usuarios"
-                  className="flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200"
+                <button
+                  onClick={() => handleMenuClick('/usuarios')}
+                  className="w-full flex items-center gap-2 lg:gap-3 px-3 lg:px-4 py-2.5 lg:py-3 rounded-lg transition-all duration-200 text-left"
                   style={
                     isActive('/usuarios')
                       ? {
@@ -290,16 +349,16 @@ export default function MainLayout() {
                       : { color: '#374151' }
                   }
                 >
-                  <Users size={20} />
-                  <span className="font-medium">Usuarios</span>
-                </Link>
+                  <Users size={18} />
+                  <span className="font-medium text-sm">Usuarios</span>
+                </button>
               </>
             )}
           </nav>
 
           {/* Footer del sidebar */}
           <div
-            className="absolute bottom-0 left-0 right-0 p-4"
+            className="absolute bottom-0 left-0 right-0 p-3 lg:p-4"
             style={{
               borderTop: '1px solid var(--theme-primary-100)',
               backgroundColor: 'var(--theme-primary-50)'
@@ -307,22 +366,22 @@ export default function MainLayout() {
           >
             <div className="text-center">
               <p
-                className="text-xs"
+                className="text-[10px] lg:text-xs"
                 style={{ color: 'var(--theme-primary-500)' }}
               >
                 SISGEDI v2.0
               </p>
-              <p className="text-xs text-gray-400">Gestion Documental Inteligente</p>
+              <p className="text-[10px] lg:text-xs text-gray-400">Gestion Documental Inteligente</p>
             </div>
           </div>
         </aside>
 
         {/* Contenido principal */}
         <main
-          className={`flex-1 p-6 ${sidebarOpen ? '' : 'ml-0'} min-h-[calc(100vh-64px)]`}
+          className={`flex-1 p-3 sm:p-4 lg:p-6 min-h-[calc(100vh-64px)] transition-all duration-300`}
           style={{ backgroundColor: 'var(--theme-bg-secondary)' }}
         >
-          <div className="animate-fade-in">
+          <div className="animate-fade-in max-w-7xl mx-auto">
             <Outlet />
           </div>
         </main>
