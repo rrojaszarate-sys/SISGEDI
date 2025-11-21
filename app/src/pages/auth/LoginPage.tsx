@@ -49,34 +49,56 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen flex flex-col">
       {/* Header institucional */}
-      <header className="bg-guinda-700 text-white py-3 px-6 shadow-lg">
+      <header
+        className="text-white py-3 px-6 shadow-lg"
+        style={{ backgroundColor: 'var(--theme-primary-700)' }}
+      >
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <Shield size={28} className="text-dorado-400" />
+            <Shield size={28} style={{ color: 'var(--theme-secondary, #d9a316)' }} />
             <div>
               <h1 className="text-lg font-bold tracking-wide">GOBIERNO DEL ESTADO</h1>
-              <p className="text-xs text-guinda-200">Sistema de Gestion Documental</p>
+              <p className="text-xs opacity-70">Sistema de Gestion Documental</p>
             </div>
           </div>
           <div className="text-right hidden sm:block">
-            <p className="text-sm text-guinda-200">Portal Oficial</p>
+            <p className="text-sm opacity-70">Portal Oficial</p>
           </div>
         </div>
       </header>
 
       {/* Contenido principal */}
-      <main className="flex-1 flex items-center justify-center bg-gradient-to-br from-guinda-50 via-white to-guinda-100 p-4">
-        <Card className="w-full max-w-md shadow-2xl border border-guinda-200">
+      <main
+        className="flex-1 flex items-center justify-center p-4"
+        style={{
+          background: `linear-gradient(135deg, var(--theme-primary-50) 0%, white 50%, var(--theme-primary-100) 100%)`
+        }}
+      >
+        <Card
+          className="w-full max-w-md shadow-2xl"
+          style={{ borderColor: 'var(--theme-primary-200)', borderWidth: '1px' }}
+        >
           <CardBody className="p-8">
             {/* Logo y titulo */}
             <div className="text-center mb-6">
               <div className="flex justify-center mb-4">
-                <div className="bg-guinda-700 p-4 rounded-xl shadow-lg">
+                <div
+                  className="p-4 rounded-xl shadow-lg"
+                  style={{ backgroundColor: 'var(--theme-primary-700)' }}
+                >
                   <FileText size={44} className="text-white" />
                 </div>
               </div>
-              <h1 className="text-3xl font-bold text-guinda-800">SISGEDI</h1>
-              <p className="text-guinda-600 mt-1 text-sm font-medium">
+              <h1
+                className="text-3xl font-bold"
+                style={{ color: 'var(--theme-primary-800)' }}
+              >
+                SISGEDI
+              </h1>
+              <p
+                className="mt-1 text-sm font-medium"
+                style={{ color: 'var(--theme-primary-600)' }}
+              >
                 Sistema de Gestion Documental Inteligente
               </p>
               <p className="text-gray-500 mt-1 text-xs">Version 2.0</p>
@@ -92,12 +114,10 @@ export default function LoginPage() {
                 placeholder="usuario@institucion.gob.mx"
                 value={email}
                 onValueChange={setEmail}
-                startContent={<Mail size={18} className="text-guinda-400" />}
+                startContent={
+                  <Mail size={18} style={{ color: 'var(--theme-primary-400)' }} />
+                }
                 variant="bordered"
-                classNames={{
-                  inputWrapper: "border-guinda-200 hover:border-guinda-400 focus-within:border-guinda-600",
-                  label: "text-guinda-700",
-                }}
                 isRequired
               />
 
@@ -107,7 +127,9 @@ export default function LoginPage() {
                 placeholder="Ingresa tu contrasena"
                 value={password}
                 onValueChange={setPassword}
-                startContent={<Lock size={18} className="text-guinda-400" />}
+                startContent={
+                  <Lock size={18} style={{ color: 'var(--theme-primary-400)' }} />
+                }
                 endContent={
                   <button
                     type="button"
@@ -115,25 +137,21 @@ export default function LoginPage() {
                     className="focus:outline-none"
                   >
                     {showPassword ? (
-                      <EyeOff size={18} className="text-guinda-400" />
+                      <EyeOff size={18} style={{ color: 'var(--theme-primary-400)' }} />
                     ) : (
-                      <Eye size={18} className="text-guinda-400" />
+                      <Eye size={18} style={{ color: 'var(--theme-primary-400)' }} />
                     )}
                   </button>
                 }
                 variant="bordered"
-                classNames={{
-                  inputWrapper: "border-guinda-200 hover:border-guinda-400 focus-within:border-guinda-600",
-                  label: "text-guinda-700",
-                }}
                 isRequired
               />
 
               <Button
                 type="submit"
-                color="primary"
                 size="lg"
-                className="w-full font-semibold text-white bg-guinda-700 hover:bg-guinda-800"
+                className="w-full font-semibold text-white"
+                style={{ backgroundColor: 'var(--theme-primary-700)' }}
                 isLoading={loading}
               >
                 Iniciar Sesion
@@ -151,15 +169,23 @@ export default function LoginPage() {
       </main>
 
       {/* Footer institucional */}
-      <footer className="bg-guinda-800 text-white py-4 px-6">
+      <footer
+        className="text-white py-4 px-6"
+        style={{ backgroundColor: 'var(--theme-primary-800)' }}
+      >
         <div className="max-w-7xl mx-auto text-center">
-          <p className="text-sm text-guinda-200">
+          <p className="text-sm opacity-70">
             Sistema de uso exclusivo para servidores publicos autorizados
           </p>
           <div className="flex items-center justify-center gap-2 mt-2">
-            <span className="text-dorado-400 font-semibold">SISGEDI 2.0</span>
-            <span className="text-guinda-400">|</span>
-            <span className="text-guinda-300 text-xs">2025 - Todos los derechos reservados</span>
+            <span
+              className="font-semibold"
+              style={{ color: 'var(--theme-secondary, #d9a316)' }}
+            >
+              SISGEDI 2.0
+            </span>
+            <span className="opacity-50">|</span>
+            <span className="text-xs opacity-60">2025 - Todos los derechos reservados</span>
           </div>
         </div>
       </footer>
