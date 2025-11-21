@@ -27,7 +27,7 @@ import BusquedaPage from './pages/reportes/BusquedaPage';
 
 // Componente de ruta protegida
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { user, loading } = useAuth();
+  const { user, usuario, loading, isDevMode } = useAuth();
 
   if (loading) {
     return (
@@ -37,7 +37,10 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
     );
   }
 
-  if (!user) {
+  // En modo desarrollo, verificar usuario mock; en produccion, verificar user de Supabase
+  const isAuthenticated = isDevMode ? !!usuario : !!user;
+
+  if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
   }
 

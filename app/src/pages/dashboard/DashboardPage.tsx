@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Card,
   CardBody,
@@ -6,6 +7,7 @@ import {
   Progress,
   Chip,
   Divider,
+  Button,
 } from '@nextui-org/react';
 import {
   FileText,
@@ -13,12 +15,15 @@ import {
   AlertTriangle,
   TrendingUp,
   Calendar,
-  Users,
   Send,
   Clock,
+  Plus,
+  Search,
+  FolderOpen,
+  Package,
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
-import { supabase } from '../../lib/supabase';
+import { supabase, DEV_MODE } from '../../lib/supabase';
 
 interface Indicadores {
   total_documentos: number;
@@ -36,42 +41,102 @@ interface DocReciente {
   estatus_general: string;
 }
 
+// Datos mock para modo desarrollo
+const MOCK_INDICADORES: Indicadores = {
+  total_documentos: 156,
+  verdes: 98,
+  amarillos: 35,
+  rojos: 23,
+  promedio_avance: 72,
+};
+
+const MOCK_DOCS_RECIENTES: DocReciente[] = [
+  {
+    id_doc_entrante: 'mock-1',
+    folio_interno: 'DOC-2025-0156',
+    asunto: 'Solicitud de informacion sobre programa social',
+    fecha_registro: new Date().toISOString(),
+    estatus_general: 'Pendiente',
+  },
+  {
+    id_doc_entrante: 'mock-2',
+    folio_interno: 'DOC-2025-0155',
+    asunto: 'Convenio de colaboracion interinstitucional',
+    fecha_registro: new Date(Date.now() - 86400000).toISOString(),
+    estatus_general: 'En_Proceso',
+  },
+  {
+    id_doc_entrante: 'mock-3',
+    folio_interno: 'DOC-2025-0154',
+    asunto: 'Respuesta a oficio numero 123/2025',
+    fecha_registro: new Date(Date.now() - 172800000).toISOString(),
+    estatus_general: 'Concluido',
+  },
+  {
+    id_doc_entrante: 'mock-4',
+    folio_interno: 'DOC-2025-0153',
+    asunto: 'Invitacion a evento oficial del gobierno',
+    fecha_registro: new Date(Date.now() - 259200000).toISOString(),
+    estatus_general: 'En_Proceso',
+  },
+  {
+    id_doc_entrante: 'mock-5',
+    folio_interno: 'DOC-2025-0152',
+    asunto: 'Tramite de licencia de funcionamiento',
+    fecha_registro: new Date(Date.now() - 345600000).toISOString(),
+    estatus_general: 'Pendiente',
+  },
+];
+
 export default function DashboardPage() {
-  const { usuario } = useAuth();
+  const { usuario, isDevMode } = useAuth();
+  const navigate = useNavigate();
   const [indicadores, setIndicadores] = useState<Indicadores | null>(null);
   const [docsRecientes, setDocsRecientes] = useState<DocReciente[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (usuario?.id_ua) {
-      fetchData();
-    }
+    fetchData();
   }, [usuario]);
 
   const fetchData = async () => {
     try {
-      // Obtener indicadores del dashboard
-      const { data: indData } = await supabase
-        .rpc('obtener_indicadores_dashboard', { p_id_ua: usuario?.id_ua });
-
-      if (indData && indData.length > 0) {
-        setIndicadores(indData[0]);
+      // En modo desarrollo, usar datos mock
+      if (isDevMode || DEV_MODE) {
+        setIndicadores(MOCK_INDICADORES);
+        setDocsRecientes(MOCK_DOCS_RECIENTES);
+        setLoading(false);
+        return;
       }
 
-      // Obtener documentos recientes
-      const { data: docsData } = await supabase
-        .from('tbl_documento_entrante')
-        .select('id_doc_entrante, folio_interno, asunto, fecha_registro, estatus_general')
-        .eq('id_ua_registro', usuario?.id_ua)
-        .eq('eliminado', false)
-        .order('fecha_registro', { ascending: false })
-        .limit(5);
+      // En produccion, obtener datos reales de Supabase
+      if (usuario?.unidad_administrativa?.id_ua) {
+        const { data: indData } = await supabase
+          .rpc('obtener_indicadores_dashboard', { p_id_ua: usuario.unidad_administrativa.id_ua });
 
-      if (docsData) {
-        setDocsRecientes(docsData);
+        if (indData && indData.length > 0) {
+          setIndicadores(indData[0]);
+        }
+
+        const { data: docsData } = await supabase
+          .from('tbl_documento_entrante')
+          .select('id_doc_entrante, folio_interno, asunto, fecha_registro, estatus_general')
+          .eq('id_ua_registro', usuario.unidad_administrativa.id_ua)
+          .eq('eliminado', false)
+          .order('fecha_registro', { ascending: false })
+          .limit(5);
+
+        if (docsData) {
+          setDocsRecientes(docsData);
+        }
       }
     } catch (error) {
       console.error('Error al cargar dashboard:', error);
+      // En caso de error, mostrar datos mock
+      if (isDevMode || DEV_MODE) {
+        setIndicadores(MOCK_INDICADORES);
+        setDocsRecientes(MOCK_DOCS_RECIENTES);
+      }
     } finally {
       setLoading(false);
     }
@@ -95,130 +160,184 @@ export default function DashboardPage() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Encabezado */}
-      <div>
-        <h1 className="text-2xl font-bold text-gray-800">
-          Bienvenido, {usuario?.nombre_completo?.split(' ')[0]}
-        </h1>
-        <p className="text-gray-500">
-          {usuario?.unidad_administrativa?.nombre_ua} - {formatDate(new Date().toISOString())}
-        </p>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1
+            className="text-xl sm:text-2xl font-bold"
+            style={{ color: 'var(--theme-primary-800)' }}
+          >
+            Bienvenido, {usuario?.nombre_completo?.split(' ')[0] || 'Usuario'}
+          </h1>
+          <p className="text-sm text-gray-500">
+            {usuario?.unidad_administrativa?.nombre_ua || 'Unidad Administrativa'} - {formatDate(new Date().toISOString())}
+          </p>
+        </div>
+        <Button
+          color="primary"
+          startContent={<Plus size={18} />}
+          style={{ backgroundColor: 'var(--theme-primary-700)' }}
+          onPress={() => navigate('/documentos/nuevo')}
+        >
+          Nuevo Documento
+        </Button>
       </div>
 
+      {/* Badge de modo desarrollo */}
+      {(isDevMode || DEV_MODE) && (
+        <div
+          className="p-3 rounded-lg text-sm font-medium"
+          style={{ backgroundColor: 'var(--theme-warning-bg)', color: 'var(--theme-warning-text)' }}
+        >
+          Modo Desarrollo - Mostrando datos de ejemplo
+        </div>
+      )}
+
       {/* Tarjetas de indicadores */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="bg-gradient-to-br from-blue-500 to-blue-600 text-white">
-          <CardBody className="flex flex-row items-center gap-4">
-            <div className="p-3 bg-white/20 rounded-lg">
-              <FileText size={24} />
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        <Card
+          className="cursor-pointer hover:scale-[1.02] transition-transform"
+          style={{ background: 'linear-gradient(135deg, var(--theme-primary-600) 0%, var(--theme-primary-700) 100%)' }}
+          isPressable
+          onPress={() => navigate('/documentos')}
+        >
+          <CardBody className="flex flex-row items-center gap-3 sm:gap-4 p-3 sm:p-4 text-white">
+            <div className="p-2 sm:p-3 bg-white/20 rounded-lg">
+              <FileText size={20} className="sm:w-6 sm:h-6" />
             </div>
             <div>
-              <p className="text-sm opacity-80">Total Documentos</p>
-              <p className="text-3xl font-bold">{indicadores?.total_documentos || 0}</p>
+              <p className="text-[10px] sm:text-sm opacity-80">Total Documentos</p>
+              <p className="text-xl sm:text-3xl font-bold">{indicadores?.total_documentos || 0}</p>
             </div>
           </CardBody>
         </Card>
 
-        <Card className="bg-gradient-to-br from-green-500 to-green-600 text-white">
-          <CardBody className="flex flex-row items-center gap-4">
-            <div className="p-3 bg-white/20 rounded-lg">
-              <CheckCircle size={24} />
+        <Card
+          className="cursor-pointer hover:scale-[1.02] transition-transform"
+          style={{ background: 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)' }}
+          isPressable
+        >
+          <CardBody className="flex flex-row items-center gap-3 sm:gap-4 p-3 sm:p-4 text-white">
+            <div className="p-2 sm:p-3 bg-white/20 rounded-lg">
+              <CheckCircle size={20} className="sm:w-6 sm:h-6" />
             </div>
             <div>
-              <p className="text-sm opacity-80">En Tiempo</p>
-              <p className="text-3xl font-bold">{indicadores?.verdes || 0}</p>
+              <p className="text-[10px] sm:text-sm opacity-80">En Tiempo</p>
+              <p className="text-xl sm:text-3xl font-bold">{indicadores?.verdes || 0}</p>
             </div>
           </CardBody>
         </Card>
 
-        <Card className="bg-gradient-to-br from-yellow-500 to-yellow-600 text-white">
-          <CardBody className="flex flex-row items-center gap-4">
-            <div className="p-3 bg-white/20 rounded-lg">
-              <Clock size={24} />
+        <Card
+          className="cursor-pointer hover:scale-[1.02] transition-transform"
+          style={{ background: 'linear-gradient(135deg, #eab308 0%, #ca8a04 100%)' }}
+          isPressable
+        >
+          <CardBody className="flex flex-row items-center gap-3 sm:gap-4 p-3 sm:p-4 text-white">
+            <div className="p-2 sm:p-3 bg-white/20 rounded-lg">
+              <Clock size={20} className="sm:w-6 sm:h-6" />
             </div>
             <div>
-              <p className="text-sm opacity-80">Por Vencer</p>
-              <p className="text-3xl font-bold">{indicadores?.amarillos || 0}</p>
+              <p className="text-[10px] sm:text-sm opacity-80">Por Vencer</p>
+              <p className="text-xl sm:text-3xl font-bold">{indicadores?.amarillos || 0}</p>
             </div>
           </CardBody>
         </Card>
 
-        <Card className="bg-gradient-to-br from-red-500 to-red-600 text-white">
-          <CardBody className="flex flex-row items-center gap-4">
-            <div className="p-3 bg-white/20 rounded-lg">
-              <AlertTriangle size={24} />
+        <Card
+          className="cursor-pointer hover:scale-[1.02] transition-transform"
+          style={{ background: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)' }}
+          isPressable
+        >
+          <CardBody className="flex flex-row items-center gap-3 sm:gap-4 p-3 sm:p-4 text-white">
+            <div className="p-2 sm:p-3 bg-white/20 rounded-lg">
+              <AlertTriangle size={20} className="sm:w-6 sm:h-6" />
             </div>
             <div>
-              <p className="text-sm opacity-80">Vencidos</p>
-              <p className="text-3xl font-bold">{indicadores?.rojos || 0}</p>
+              <p className="text-[10px] sm:text-sm opacity-80">Vencidos</p>
+              <p className="text-xl sm:text-3xl font-bold">{indicadores?.rojos || 0}</p>
             </div>
           </CardBody>
         </Card>
       </div>
 
       {/* Segunda fila */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
         {/* Avance promedio */}
-        <Card>
-          <CardHeader className="flex gap-3">
-            <TrendingUp className="text-primary" />
+        <Card className="shadow-sm">
+          <CardHeader className="flex gap-3 pb-0">
+            <TrendingUp style={{ color: 'var(--theme-primary-600)' }} />
             <div>
-              <p className="font-semibold">Avance Promedio</p>
-              <p className="text-sm text-gray-500">Documentos en proceso</p>
+              <p className="font-semibold text-sm sm:text-base">Avance Promedio</p>
+              <p className="text-xs text-gray-500">Documentos en proceso</p>
             </div>
           </CardHeader>
           <CardBody>
             <div className="text-center mb-4">
-              <span className="text-4xl font-bold text-primary">
+              <span
+                className="text-3xl sm:text-4xl font-bold"
+                style={{ color: 'var(--theme-primary-700)' }}
+              >
                 {indicadores?.promedio_avance?.toFixed(0) || 0}%
               </span>
             </div>
             <Progress
               value={indicadores?.promedio_avance || 0}
-              color="primary"
               size="lg"
               showValueLabel
+              classNames={{
+                indicator: "bg-gradient-to-r from-[var(--theme-primary-500)] to-[var(--theme-primary-700)]"
+              }}
             />
           </CardBody>
         </Card>
 
         {/* Documentos recientes */}
-        <Card className="lg:col-span-2">
-          <CardHeader className="flex gap-3">
-            <Calendar className="text-primary" />
+        <Card className="lg:col-span-2 shadow-sm">
+          <CardHeader className="flex gap-3 pb-0">
+            <Calendar style={{ color: 'var(--theme-primary-600)' }} />
             <div>
-              <p className="font-semibold">Documentos Recientes</p>
-              <p className="text-sm text-gray-500">Últimos 5 registros</p>
+              <p className="font-semibold text-sm sm:text-base">Documentos Recientes</p>
+              <p className="text-xs text-gray-500">Ultimos 5 registros</p>
             </div>
           </CardHeader>
-          <Divider />
-          <CardBody>
+          <Divider className="mt-2" />
+          <CardBody className="p-2 sm:p-4">
             {loading ? (
               <div className="space-y-3">
                 {[1, 2, 3].map((i) => (
-                  <div key={i} className="skeleton h-12 w-full" />
+                  <div key={i} className="skeleton h-12 w-full rounded-lg" />
                 ))}
               </div>
             ) : docsRecientes.length > 0 ? (
-              <div className="space-y-3">
+              <div className="space-y-2">
                 {docsRecientes.map((doc) => (
                   <div
                     key={doc.id_doc_entrante}
-                    className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+                    className="flex items-center justify-between p-2 sm:p-3 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer"
+                    style={{ backgroundColor: 'var(--theme-bg-secondary)' }}
+                    onClick={() => !DEV_MODE && navigate(`/documentos/${doc.id_doc_entrante}`)}
                   >
-                    <div className="flex-1">
-                      <p className="font-medium text-sm">{doc.folio_interno}</p>
-                      <p className="text-xs text-gray-500 truncate max-w-xs">
+                    <div className="flex-1 min-w-0">
+                      <p
+                        className="font-medium text-xs sm:text-sm"
+                        style={{ color: 'var(--theme-primary-700)' }}
+                      >
+                        {doc.folio_interno}
+                      </p>
+                      <p className="text-[10px] sm:text-xs text-gray-500 truncate">
                         {doc.asunto}
                       </p>
                     </div>
-                    <div className="flex items-center gap-3">
-                      <span className="text-xs text-gray-400">
+                    <div className="flex items-center gap-2 sm:gap-3 ml-2">
+                      <span className="text-[10px] sm:text-xs text-gray-400 hidden sm:block">
                         {formatDate(doc.fecha_registro)}
                       </span>
-                      <Chip size="sm" color={getEstatusColor(doc.estatus_general)}>
-                        {doc.estatus_general.replace('_', ' ')}
+                      <Chip size="sm" color={getEstatusColor(doc.estatus_general)} variant="flat">
+                        <span className="text-[10px] sm:text-xs">
+                          {doc.estatus_general.replace('_', ' ')}
+                        </span>
                       </Chip>
                     </div>
                   </div>
@@ -234,42 +353,92 @@ export default function DashboardPage() {
         </Card>
       </div>
 
-      {/* Accesos rápidos */}
-      <Card>
-        <CardHeader>
-          <p className="font-semibold">Acciones Rápidas</p>
+      {/* Accesos rapidos */}
+      <Card className="shadow-sm">
+        <CardHeader className="pb-0">
+          <p className="font-semibold text-sm sm:text-base">Acciones Rapidas</p>
         </CardHeader>
-        <Divider />
+        <Divider className="mt-2" />
         <CardBody>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <a
-              href="/documentos/nuevo"
-              className="flex flex-col items-center p-4 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors"
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
+            <button
+              onClick={() => navigate('/documentos/nuevo')}
+              className="flex flex-col items-center p-3 sm:p-4 rounded-xl transition-all hover:scale-105"
+              style={{ backgroundColor: 'var(--theme-primary-50)' }}
             >
-              <FileText className="text-blue-600 mb-2" size={32} />
-              <span className="text-sm font-medium text-blue-800">Nuevo Documento</span>
-            </a>
-            <a
-              href="/turnado"
-              className="flex flex-col items-center p-4 bg-green-50 rounded-lg hover:bg-green-100 transition-colors"
+              <div
+                className="p-2 sm:p-3 rounded-lg mb-2"
+                style={{ backgroundColor: 'var(--theme-primary-100)' }}
+              >
+                <Plus size={24} style={{ color: 'var(--theme-primary-700)' }} />
+              </div>
+              <span
+                className="text-[10px] sm:text-xs font-medium text-center"
+                style={{ color: 'var(--theme-primary-800)' }}
+              >
+                Nuevo Doc.
+              </span>
+            </button>
+
+            <button
+              onClick={() => navigate('/documentos')}
+              className="flex flex-col items-center p-3 sm:p-4 rounded-xl transition-all hover:scale-105 bg-blue-50"
             >
-              <Send className="text-green-600 mb-2" size={32} />
-              <span className="text-sm font-medium text-green-800">Ver Turnados</span>
-            </a>
-            <a
-              href="/salientes/nuevo"
-              className="flex flex-col items-center p-4 bg-purple-50 rounded-lg hover:bg-purple-100 transition-colors"
+              <div className="p-2 sm:p-3 rounded-lg mb-2 bg-blue-100">
+                <FileText size={24} className="text-blue-700" />
+              </div>
+              <span className="text-[10px] sm:text-xs font-medium text-center text-blue-800">
+                Entrantes
+              </span>
+            </button>
+
+            <button
+              onClick={() => navigate('/turnado')}
+              className="flex flex-col items-center p-3 sm:p-4 rounded-xl transition-all hover:scale-105 bg-green-50"
             >
-              <FileText className="text-purple-600 mb-2" size={32} />
-              <span className="text-sm font-medium text-purple-800">Nuevo Oficio</span>
-            </a>
-            <a
-              href="/busqueda"
-              className="flex flex-col items-center p-4 bg-orange-50 rounded-lg hover:bg-orange-100 transition-colors"
+              <div className="p-2 sm:p-3 rounded-lg mb-2 bg-green-100">
+                <Send size={24} className="text-green-700" />
+              </div>
+              <span className="text-[10px] sm:text-xs font-medium text-center text-green-800">
+                Turnados
+              </span>
+            </button>
+
+            <button
+              onClick={() => navigate('/salientes')}
+              className="flex flex-col items-center p-3 sm:p-4 rounded-xl transition-all hover:scale-105 bg-purple-50"
             >
-              <Users className="text-orange-600 mb-2" size={32} />
-              <span className="text-sm font-medium text-orange-800">Buscar</span>
-            </a>
+              <div className="p-2 sm:p-3 rounded-lg mb-2 bg-purple-100">
+                <FolderOpen size={24} className="text-purple-700" />
+              </div>
+              <span className="text-[10px] sm:text-xs font-medium text-center text-purple-800">
+                Salientes
+              </span>
+            </button>
+
+            <button
+              onClick={() => navigate('/inventario')}
+              className="flex flex-col items-center p-3 sm:p-4 rounded-xl transition-all hover:scale-105 bg-orange-50"
+            >
+              <div className="p-2 sm:p-3 rounded-lg mb-2 bg-orange-100">
+                <Package size={24} className="text-orange-700" />
+              </div>
+              <span className="text-[10px] sm:text-xs font-medium text-center text-orange-800">
+                Inventario
+              </span>
+            </button>
+
+            <button
+              onClick={() => navigate('/busqueda')}
+              className="flex flex-col items-center p-3 sm:p-4 rounded-xl transition-all hover:scale-105 bg-teal-50"
+            >
+              <div className="p-2 sm:p-3 rounded-lg mb-2 bg-teal-100">
+                <Search size={24} className="text-teal-700" />
+              </div>
+              <span className="text-[10px] sm:text-xs font-medium text-center text-teal-800">
+                Busqueda
+              </span>
+            </button>
           </div>
         </CardBody>
       </Card>
