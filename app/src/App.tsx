@@ -1,6 +1,7 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from './contexts/AuthContext';
-import { Spinner } from '@nextui-org/react';
+import { Spinner, Card, CardBody, Button } from '@nextui-org/react';
+import { isSupabaseConfigured } from './lib/supabase';
 
 // Layout
 import MainLayout from './components/layout/MainLayout';
@@ -43,6 +44,42 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 
 function App() {
   const { loading } = useAuth();
+
+  // Mostrar error si Supabase no esta configurado
+  if (!isSupabaseConfigured) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+        <Card className="max-w-lg mx-4">
+          <CardBody className="text-center p-8">
+            <div className="text-6xl mb-4">⚠️</div>
+            <h1 className="text-2xl font-bold text-gray-800 mb-4">
+              SISGEDI - Configuracion Requerida
+            </h1>
+            <p className="text-gray-600 mb-4">
+              Las variables de entorno de Supabase no estan configuradas.
+            </p>
+            <div className="bg-gray-100 rounded-lg p-4 text-left text-sm mb-4">
+              <p className="font-mono text-gray-700 mb-2">
+                <strong>En Vercel, agrega estas variables:</strong>
+              </p>
+              <p className="font-mono text-blue-600">VITE_SUPABASE_URL</p>
+              <p className="font-mono text-blue-600">VITE_SUPABASE_ANON_KEY</p>
+            </div>
+            <p className="text-sm text-gray-500">
+              Encuentra estos valores en tu dashboard de Supabase → Settings → API
+            </p>
+            <Button
+              color="primary"
+              className="mt-4"
+              onPress={() => window.open('https://supabase.com/dashboard', '_blank')}
+            >
+              Ir a Supabase Dashboard
+            </Button>
+          </CardBody>
+        </Card>
+      </div>
+    );
+  }
 
   if (loading) {
     return (
