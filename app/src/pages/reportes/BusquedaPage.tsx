@@ -19,6 +19,7 @@ import {
 } from '@nextui-org/react';
 import { Search, Eye, FileText, Calendar, User, Filter, Sparkles } from 'lucide-react';
 import { supabase, DEV_MODE } from '../../lib/supabase';
+import { devDocumentosEntrantes } from '../../lib/devStorage';
 import { useAuth } from '../../contexts/AuthContext';
 import { toast } from 'sonner';
 
@@ -31,55 +32,6 @@ interface ResultadoBusqueda {
   estatus_general: string;
   rank: number;
 }
-
-// Datos mock para busqueda en modo desarrollo
-const MOCK_RESULTADOS: ResultadoBusqueda[] = [
-  {
-    id_doc_entrante: 'mock-search-1',
-    folio_interno: 'DOC-2025-0156',
-    asunto: 'Solicitud de informacion sobre programa de apoyo social 2025',
-    remitente_nombre: 'Lic. Maria Garcia Lopez',
-    fecha_registro: new Date().toISOString(),
-    estatus_general: 'Pendiente',
-    rank: 0.95,
-  },
-  {
-    id_doc_entrante: 'mock-search-2',
-    folio_interno: 'DOC-2025-0142',
-    asunto: 'Convenio de colaboracion para proyectos sociales',
-    remitente_nombre: 'Ing. Roberto Martinez',
-    fecha_registro: new Date(Date.now() - 86400000 * 2).toISOString(),
-    estatus_general: 'En_Proceso',
-    rank: 0.78,
-  },
-  {
-    id_doc_entrante: 'mock-search-3',
-    folio_interno: 'DOC-2025-0128',
-    asunto: 'Informe de actividades del programa social trimestral',
-    remitente_nombre: 'C.P. Ana Hernandez',
-    fecha_registro: new Date(Date.now() - 86400000 * 5).toISOString(),
-    estatus_general: 'Concluido',
-    rank: 0.65,
-  },
-  {
-    id_doc_entrante: 'mock-search-4',
-    folio_interno: 'DOC-2025-0115',
-    asunto: 'Solicitud de presupuesto adicional para obras',
-    remitente_nombre: 'Arq. Patricia Sanchez',
-    fecha_registro: new Date(Date.now() - 86400000 * 8).toISOString(),
-    estatus_general: 'Pendiente',
-    rank: 0.45,
-  },
-  {
-    id_doc_entrante: 'mock-search-5',
-    folio_interno: 'DOC-2024-0989',
-    asunto: 'Respuesta a solicitud de informacion publica',
-    remitente_nombre: 'Lic. Carlos Ruiz',
-    fecha_registro: new Date(Date.now() - 86400000 * 15).toISOString(),
-    estatus_general: 'Archivado',
-    rank: 0.32,
-  },
-];
 
 export default function BusquedaPage() {
   const navigate = useNavigate();
@@ -99,19 +51,19 @@ export default function BusquedaPage() {
     setLoading(true);
     setSearched(true);
 
-    // En modo desarrollo, usar datos mock
+    // En modo desarrollo, usar devStorage
     if (isDevMode || DEV_MODE) {
-      await new Promise(resolve => setTimeout(resolve, 800));
-      let filtered = MOCK_RESULTADOS.filter(r =>
-        r.asunto.toLowerCase().includes(query.toLowerCase()) ||
-        r.remitente_nombre.toLowerCase().includes(query.toLowerCase()) ||
-        r.folio_interno.toLowerCase().includes(query.toLowerCase())
-      );
+      const searchResults = devDocumentosEntrantes.search(query);
 
-      // Si no hay coincidencias, mostrar algunos resultados simulados
-      if (filtered.length === 0) {
-        filtered = MOCK_RESULTADOS.slice(0, 3);
-      }
+      let filtered = searchResults.map((doc, index) => ({
+        id_doc_entrante: doc.id_doc_entrante,
+        folio_interno: doc.folio_interno || '',
+        asunto: doc.asunto || '',
+        remitente_nombre: doc.remitente_nombre || '',
+        fecha_registro: doc.fecha_registro || new Date().toISOString(),
+        estatus_general: doc.estatus_general || 'Pendiente',
+        rank: Math.max(0.3, 1 - (index * 0.15)), // Simular ranking por posicion
+      }));
 
       if (filtroEstatus !== 'todos') {
         filtered = filtered.filter(r => r.estatus_general === filtroEstatus);
@@ -153,11 +105,7 @@ export default function BusquedaPage() {
   };
 
   const handleVerDocumento = (id: string) => {
-    if (isDevMode || DEV_MODE) {
-      toast.info('Vista de documento (modo desarrollo)');
-    } else {
-      navigate(`/documentos/${id}`);
-    }
+    navigate(`/documentos/${id}`);
   };
 
   const formatDate = (date: string) => {

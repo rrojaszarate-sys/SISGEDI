@@ -22,11 +22,12 @@ import {
   Card,
   CardBody,
 } from '@nextui-org/react';
-import { Plus, Search, Edit, UserCog, RefreshCw } from 'lucide-react';
+import { Plus, Search, Edit, UserCog, RefreshCw, Trash2 } from 'lucide-react';
 import { supabase, DEV_MODE } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import { toast } from 'sonner';
 import type { Rol } from '../../types/database';
+import { devRoles } from '../../lib/devStorage';
 
 const modulosDisponibles = [
   { key: 'admin', label: 'Administracion' },
@@ -54,53 +55,6 @@ const accionesDisponibles = [
   { key: 'elaborar', label: 'Elaborar Documentos' },
 ];
 
-// Datos mock para modo desarrollo
-const MOCK_ROLES: Rol[] = [
-  {
-    id_rol: 'mock-rol-1',
-    nombre_rol: 'Administrador General',
-    descripcion: 'Acceso total al sistema',
-    elementos_menu: {
-      modulos: ['admin', 'admin_usuarios', 'doc_entrante', 'seguimiento', 'doc_saliente', 'dashboard', 'consultas', 'auditoria', 'inventario'],
-      acciones: ['crear', 'editar', 'eliminar', 'turnar', 'firmar', 'rechazar', 'concluir', 'exportar', 'ver', 'avance', 'elaborar'],
-    },
-    estatus: true,
-    fecha_creacion: new Date().toISOString(),
-  },
-  {
-    id_rol: 'mock-rol-2',
-    nombre_rol: 'Administrador de UA',
-    descripcion: 'Administrador de Unidad Administrativa',
-    elementos_menu: {
-      modulos: ['admin_usuarios', 'doc_entrante', 'seguimiento', 'doc_saliente', 'dashboard', 'consultas', 'inventario'],
-      acciones: ['crear', 'editar', 'turnar', 'firmar', 'rechazar', 'concluir', 'exportar', 'ver', 'avance', 'elaborar'],
-    },
-    estatus: true,
-    fecha_creacion: new Date().toISOString(),
-  },
-  {
-    id_rol: 'mock-rol-3',
-    nombre_rol: 'Operador',
-    descripcion: 'Usuario operativo para gestion de documentos',
-    elementos_menu: {
-      modulos: ['doc_entrante', 'seguimiento', 'doc_saliente', 'dashboard', 'consultas'],
-      acciones: ['crear', 'editar', 'turnar', 'ver', 'avance', 'elaborar'],
-    },
-    estatus: true,
-    fecha_creacion: new Date().toISOString(),
-  },
-  {
-    id_rol: 'mock-rol-4',
-    nombre_rol: 'Consulta',
-    descripcion: 'Solo lectura para consulta de documentos',
-    elementos_menu: {
-      modulos: ['doc_entrante', 'seguimiento', 'dashboard', 'consultas'],
-      acciones: ['ver'],
-    },
-    estatus: true,
-    fecha_creacion: new Date().toISOString(),
-  },
-];
 
 export default function RolesPage() {
   const { isDevMode } = useAuth();
@@ -124,9 +78,10 @@ export default function RolesPage() {
   const fetchRoles = async () => {
     setLoading(true);
 
-    // En modo desarrollo, usar datos mock
+    // En modo desarrollo, usar devStorage
     if (isDevMode || DEV_MODE) {
-      setRoles(MOCK_ROLES);
+      const data = devRoles.getAll();
+      setRoles(data);
       setLoading(false);
       return;
     }
@@ -172,14 +127,6 @@ export default function RolesPage() {
       return;
     }
 
-    // En modo desarrollo, simular guardado
-    if (isDevMode || DEV_MODE) {
-      await new Promise(resolve => setTimeout(resolve, 500));
-      toast.success(editingRol ? 'Rol actualizado (modo desarrollo)' : 'Rol creado (modo desarrollo)');
-      onClose();
-      return;
-    }
-
     const payload = {
       nombre_rol: formData.nombre_rol,
       descripcion: formData.descripcion || null,
@@ -187,7 +134,22 @@ export default function RolesPage() {
         modulos: formData.modulos,
         acciones: formData.acciones,
       },
+      estatus: true,
     };
+
+    // En modo desarrollo, usar devStorage
+    if (isDevMode || DEV_MODE) {
+      if (editingRol) {
+        devRoles.update(editingRol.id_rol, payload);
+        toast.success('Rol actualizado correctamente');
+      } else {
+        devRoles.create(payload);
+        toast.success('Rol creado correctamente');
+      }
+      await fetchRoles();
+      onClose();
+      return;
+    }
 
     if (editingRol) {
       const { error } = await supabase
@@ -199,7 +161,7 @@ export default function RolesPage() {
         toast.error('Error al actualizar rol');
       } else {
         toast.success('Rol actualizado correctamente');
-        fetchRoles();
+        await fetchRoles();
         onClose();
       }
     } else {
@@ -209,9 +171,35 @@ export default function RolesPage() {
         toast.error('Error al crear rol');
       } else {
         toast.success('Rol creado correctamente');
-        fetchRoles();
+        await fetchRoles();
         onClose();
       }
+    }
+  };
+
+  const handleDelete = async (rol: Rol) => {
+    if (!confirm(`¿Estas seguro de eliminar el rol "${rol.nombre_rol}"?`)) {
+      return;
+    }
+
+    // En modo desarrollo, usar devStorage
+    if (isDevMode || DEV_MODE) {
+      devRoles.delete(rol.id_rol);
+      toast.success('Rol eliminado correctamente');
+      await fetchRoles();
+      return;
+    }
+
+    const { error } = await supabase
+      .from('cat_roles')
+      .update({ estatus: false })
+      .eq('id_rol', rol.id_rol);
+
+    if (error) {
+      toast.error('Error al eliminar rol');
+    } else {
+      toast.success('Rol eliminado correctamente');
+      await fetchRoles();
     }
   };
 
@@ -279,9 +267,9 @@ export default function RolesPage() {
             <TableColumn className="text-xs">NOMBRE</TableColumn>
             <TableColumn className="text-xs hidden md:table-cell">DESCRIPCION</TableColumn>
             <TableColumn className="text-xs">MODULOS</TableColumn>
-            <TableColumn className="text-xs hidden sm:table-cell">ACCIONES</TableColumn>
+            <TableColumn className="text-xs hidden sm:table-cell">PERMISOS</TableColumn>
             <TableColumn className="text-xs">ESTATUS</TableColumn>
-            <TableColumn className="text-xs">EDITAR</TableColumn>
+            <TableColumn className="text-xs">ACCIONES</TableColumn>
           </TableHeader>
           <TableBody items={filteredRoles} isLoading={loading} emptyContent="No hay roles">
             {(rol) => (
@@ -315,16 +303,29 @@ export default function RolesPage() {
                   </Chip>
                 </TableCell>
                 <TableCell>
-                  <Tooltip content="Editar">
-                    <Button
-                      isIconOnly
-                      size="sm"
-                      variant="light"
-                      onPress={() => handleOpenModal(rol)}
-                    >
-                      <Edit size={16} style={{ color: 'var(--theme-primary-600)' }} />
-                    </Button>
-                  </Tooltip>
+                  <div className="flex gap-1">
+                    <Tooltip content="Editar">
+                      <Button
+                        isIconOnly
+                        size="sm"
+                        variant="light"
+                        onPress={() => handleOpenModal(rol)}
+                      >
+                        <Edit size={16} style={{ color: 'var(--theme-primary-600)' }} />
+                      </Button>
+                    </Tooltip>
+                    <Tooltip content="Eliminar">
+                      <Button
+                        isIconOnly
+                        size="sm"
+                        variant="light"
+                        color="danger"
+                        onPress={() => handleDelete(rol)}
+                      >
+                        <Trash2 size={16} />
+                      </Button>
+                    </Tooltip>
+                  </div>
                 </TableCell>
               </TableRow>
             )}

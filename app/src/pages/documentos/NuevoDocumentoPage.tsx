@@ -15,28 +15,10 @@ import {
 } from '@nextui-org/react';
 import { FileText, Upload, Save, ArrowLeft } from 'lucide-react';
 import { supabase, DEV_MODE } from '../../lib/supabase';
+import { devDocumentosEntrantes, devCatalogos } from '../../lib/devStorage';
 import { useAuth } from '../../contexts/AuthContext';
 import { toast } from 'sonner';
 import type { ValorCatalogo } from '../../types/database';
-
-// Datos mock para modo desarrollo
-const MOCK_PRIORIDADES: ValorCatalogo[] = [
-  { id_valor_catalogo: 'mock-pri-1', tipo_catalogo: 'Prioridad', valor: 'Urgente', descripcion: null, es_modificable: false, orden_presentacion: 1, estatus: true, fecha_creacion: '' },
-  { id_valor_catalogo: 'mock-pri-2', tipo_catalogo: 'Prioridad', valor: 'Normal', descripcion: null, es_modificable: false, orden_presentacion: 2, estatus: true, fecha_creacion: '' },
-  { id_valor_catalogo: 'mock-pri-3', tipo_catalogo: 'Prioridad', valor: 'Baja', descripcion: null, es_modificable: true, orden_presentacion: 3, estatus: true, fecha_creacion: '' },
-];
-
-const MOCK_TIPOS_DOC: ValorCatalogo[] = [
-  { id_valor_catalogo: 'mock-tipo-1', tipo_catalogo: 'Tipo_Documento', valor: 'Oficio', descripcion: null, es_modificable: false, orden_presentacion: 1, estatus: true, fecha_creacion: '' },
-  { id_valor_catalogo: 'mock-tipo-2', tipo_catalogo: 'Tipo_Documento', valor: 'Circular', descripcion: null, es_modificable: false, orden_presentacion: 2, estatus: true, fecha_creacion: '' },
-  { id_valor_catalogo: 'mock-tipo-3', tipo_catalogo: 'Tipo_Documento', valor: 'Memorandum', descripcion: null, es_modificable: true, orden_presentacion: 3, estatus: true, fecha_creacion: '' },
-];
-
-const MOCK_AREAS: ValorCatalogo[] = [
-  { id_valor_catalogo: 'mock-area-1', tipo_catalogo: 'Area_Remitente', valor: 'Gobierno Federal', descripcion: null, es_modificable: true, orden_presentacion: 1, estatus: true, fecha_creacion: '' },
-  { id_valor_catalogo: 'mock-area-2', tipo_catalogo: 'Area_Remitente', valor: 'Gobierno Estatal', descripcion: null, es_modificable: true, orden_presentacion: 2, estatus: true, fecha_creacion: '' },
-  { id_valor_catalogo: 'mock-area-3', tipo_catalogo: 'Area_Remitente', valor: 'Particular', descripcion: null, es_modificable: true, orden_presentacion: 3, estatus: true, fecha_creacion: '' },
-];
 
 export default function NuevoDocumentoPage() {
   const navigate = useNavigate();
@@ -66,11 +48,11 @@ export default function NuevoDocumentoPage() {
   }, []);
 
   const fetchCatalogos = async () => {
-    // En modo desarrollo, usar datos mock
+    // En modo desarrollo, usar devStorage
     if (isDevMode || DEV_MODE) {
-      setPrioridades(MOCK_PRIORIDADES);
-      setTiposDoc(MOCK_TIPOS_DOC);
-      setAreasRemitente(MOCK_AREAS);
+      setPrioridades(devCatalogos.getByTipo('Prioridad'));
+      setTiposDoc(devCatalogos.getByTipo('Tipo_Documento'));
+      setAreasRemitente(devCatalogos.getByTipo('Area_Remitente'));
       return;
     }
 
@@ -93,13 +75,33 @@ export default function NuevoDocumentoPage() {
 
     setLoading(true);
 
-    // En modo desarrollo, simular guardado
+    // En modo desarrollo, usar devStorage para persistencia real
     if (isDevMode || DEV_MODE) {
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      const mockFolio = `DOC-2025-${String(Math.floor(Math.random() * 1000)).padStart(4, '0')}`;
-      toast.success(`Documento ${mockFolio} registrado (modo desarrollo)`);
-      navigate('/documentos');
-      setLoading(false);
+      try {
+        const nuevoDocumento = devDocumentosEntrantes.create({
+          numero_oficio_externo: formData.numero_oficio_externo || null,
+          fecha_documento: formData.fecha_documento || null,
+          asunto: formData.asunto,
+          id_prioridad: formData.id_prioridad || null,
+          id_tipo_doc: formData.id_tipo_doc || null,
+          id_area_remitente: formData.id_area_remitente || null,
+          remitente_nombre: formData.remitente_nombre || null,
+          remitente_cargo: formData.remitente_cargo || null,
+          remitente_institucion: formData.remitente_institucion || null,
+          marca_seguimiento: formData.marca_seguimiento as 'Turnarse' | 'Archivo' | 'Conocimiento',
+          estatus_general: 'Pendiente',
+          id_ua_registro: usuario?.unidad_administrativa?.id_ua || 'ua-001',
+          id_usuario_registro: usuario?.id_usuario || 'usr-001',
+        });
+
+        toast.success(`Documento ${nuevoDocumento.folio_interno} registrado correctamente`);
+        navigate('/documentos');
+      } catch (error) {
+        console.error(error);
+        toast.error('Error al registrar documento');
+      } finally {
+        setLoading(false);
+      }
       return;
     }
 
@@ -366,7 +368,7 @@ export default function NuevoDocumentoPage() {
       {/* Info de modo desarrollo */}
       {(isDevMode || DEV_MODE) && (
         <p className="text-xs text-center text-gray-400">
-          Modo desarrollo - El documento no se guardara en base de datos
+          Modo desarrollo - Los datos se guardan en localStorage
         </p>
       )}
     </div>

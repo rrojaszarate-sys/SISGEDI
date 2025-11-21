@@ -24,6 +24,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { supabase, DEV_MODE } from '../../lib/supabase';
+import { devIndicadores } from '../../lib/devStorage';
 
 interface Indicadores {
   total_documentos: number;
@@ -41,53 +42,6 @@ interface DocReciente {
   estatus_general: string;
 }
 
-// Datos mock para modo desarrollo
-const MOCK_INDICADORES: Indicadores = {
-  total_documentos: 156,
-  verdes: 98,
-  amarillos: 35,
-  rojos: 23,
-  promedio_avance: 72,
-};
-
-const MOCK_DOCS_RECIENTES: DocReciente[] = [
-  {
-    id_doc_entrante: 'mock-1',
-    folio_interno: 'DOC-2025-0156',
-    asunto: 'Solicitud de informacion sobre programa social',
-    fecha_registro: new Date().toISOString(),
-    estatus_general: 'Pendiente',
-  },
-  {
-    id_doc_entrante: 'mock-2',
-    folio_interno: 'DOC-2025-0155',
-    asunto: 'Convenio de colaboracion interinstitucional',
-    fecha_registro: new Date(Date.now() - 86400000).toISOString(),
-    estatus_general: 'En_Proceso',
-  },
-  {
-    id_doc_entrante: 'mock-3',
-    folio_interno: 'DOC-2025-0154',
-    asunto: 'Respuesta a oficio numero 123/2025',
-    fecha_registro: new Date(Date.now() - 172800000).toISOString(),
-    estatus_general: 'Concluido',
-  },
-  {
-    id_doc_entrante: 'mock-4',
-    folio_interno: 'DOC-2025-0153',
-    asunto: 'Invitacion a evento oficial del gobierno',
-    fecha_registro: new Date(Date.now() - 259200000).toISOString(),
-    estatus_general: 'En_Proceso',
-  },
-  {
-    id_doc_entrante: 'mock-5',
-    folio_interno: 'DOC-2025-0152',
-    asunto: 'Tramite de licencia de funcionamiento',
-    fecha_registro: new Date(Date.now() - 345600000).toISOString(),
-    estatus_general: 'Pendiente',
-  },
-];
-
 export default function DashboardPage() {
   const { usuario, isDevMode } = useAuth();
   const navigate = useNavigate();
@@ -101,10 +55,27 @@ export default function DashboardPage() {
 
   const fetchData = async () => {
     try {
-      // En modo desarrollo, usar datos mock
+      // En modo desarrollo, usar devStorage
       if (isDevMode || DEV_MODE) {
-        setIndicadores(MOCK_INDICADORES);
-        setDocsRecientes(MOCK_DOCS_RECIENTES);
+        const idUa = usuario?.unidad_administrativa?.id_ua;
+        const dashboardData = devIndicadores.getDashboard(idUa);
+
+        setIndicadores({
+          total_documentos: dashboardData.totalDocumentos,
+          verdes: dashboardData.verdes,
+          amarillos: dashboardData.amarillos,
+          rojos: dashboardData.rojos,
+          promedio_avance: dashboardData.promedioAvance,
+        });
+
+        setDocsRecientes(dashboardData.documentosRecientes.map(doc => ({
+          id_doc_entrante: doc.id_doc_entrante,
+          folio_interno: doc.folio_interno || '',
+          asunto: doc.asunto || '',
+          fecha_registro: doc.fecha_registro || new Date().toISOString(),
+          estatus_general: doc.estatus_general || 'Pendiente',
+        })));
+
         setLoading(false);
         return;
       }
@@ -132,11 +103,6 @@ export default function DashboardPage() {
       }
     } catch (error) {
       console.error('Error al cargar dashboard:', error);
-      // En caso de error, mostrar datos mock
-      if (isDevMode || DEV_MODE) {
-        setIndicadores(MOCK_INDICADORES);
-        setDocsRecientes(MOCK_DOCS_RECIENTES);
-      }
     } finally {
       setLoading(false);
     }
@@ -317,7 +283,7 @@ export default function DashboardPage() {
                     key={doc.id_doc_entrante}
                     className="flex items-center justify-between p-2 sm:p-3 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer"
                     style={{ backgroundColor: 'var(--theme-bg-secondary)' }}
-                    onClick={() => !DEV_MODE && navigate(`/documentos/${doc.id_doc_entrante}`)}
+                    onClick={() => navigate(`/documentos/${doc.id_doc_entrante}`)}
                   >
                     <div className="flex-1 min-w-0">
                       <p

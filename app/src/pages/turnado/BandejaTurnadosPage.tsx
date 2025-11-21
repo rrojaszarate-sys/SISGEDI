@@ -25,75 +25,9 @@ import {
 } from '@nextui-org/react';
 import { Send, Eye, CheckCircle, XCircle, TrendingUp, Inbox, SendHorizonal, RefreshCw } from 'lucide-react';
 import { supabase, DEV_MODE } from '../../lib/supabase';
+import { devTurnados, devDocumentosEntrantes, devUnidades } from '../../lib/devStorage';
 import { useAuth } from '../../contexts/AuthContext';
 import { toast } from 'sonner';
-
-// Datos mock para modo desarrollo
-const MOCK_TURNADOS_RECIBIDOS = [
-  {
-    id_turnado: 'turn-1',
-    id_doc_entrante: 'doc-1',
-    fecha_turnado: new Date().toISOString(),
-    fecha_vencimiento: new Date(Date.now() + 86400000 * 5).toISOString(),
-    instruccion: 'Favor de revisar y dar respuesta',
-    porcentaje_avance: 30,
-    estatus_turnado: 'En_Proceso',
-    tbl_documento_entrante: { folio_interno: 'DOC-2025-0156', asunto: 'Solicitud de informacion sobre programa social' },
-    ua_origen: { nombre_ua: 'Direccion General', codigo_ua: 'DG-001' },
-    ua_destino: { nombre_ua: 'Direccion Juridica', codigo_ua: 'DJ-001' },
-  },
-  {
-    id_turnado: 'turn-2',
-    id_doc_entrante: 'doc-2',
-    fecha_turnado: new Date(Date.now() - 86400000).toISOString(),
-    fecha_vencimiento: new Date(Date.now() + 86400000 * 2).toISOString(),
-    instruccion: 'Urgente - Elaborar dictamen',
-    porcentaje_avance: 0,
-    estatus_turnado: 'Turnado',
-    tbl_documento_entrante: { folio_interno: 'DOC-2025-0155', asunto: 'Convenio de colaboracion interinstitucional' },
-    ua_origen: { nombre_ua: 'Secretaria Particular', codigo_ua: 'SP-001' },
-    ua_destino: { nombre_ua: 'Direccion Juridica', codigo_ua: 'DJ-001' },
-  },
-  {
-    id_turnado: 'turn-3',
-    id_doc_entrante: 'doc-3',
-    fecha_turnado: new Date(Date.now() - 86400000 * 3).toISOString(),
-    fecha_vencimiento: new Date(Date.now() - 86400000).toISOString(),
-    instruccion: 'Revisar presupuesto',
-    porcentaje_avance: 80,
-    estatus_turnado: 'En_Proceso',
-    tbl_documento_entrante: { folio_interno: 'DOC-2025-0154', asunto: 'Respuesta a oficio sobre revision de presupuesto' },
-    ua_origen: { nombre_ua: 'Tesoreria', codigo_ua: 'TES-001' },
-    ua_destino: { nombre_ua: 'Direccion Juridica', codigo_ua: 'DJ-001' },
-  },
-];
-
-const MOCK_TURNADOS_ENVIADOS = [
-  {
-    id_turnado: 'turn-4',
-    id_doc_entrante: 'doc-4',
-    fecha_turnado: new Date(Date.now() - 86400000 * 2).toISOString(),
-    fecha_vencimiento: new Date(Date.now() + 86400000 * 7).toISOString(),
-    instruccion: 'Para su conocimiento',
-    porcentaje_avance: 100,
-    estatus_turnado: 'Concluido',
-    tbl_documento_entrante: { folio_interno: 'DOC-2025-0153', asunto: 'Invitacion a evento oficial' },
-    ua_origen: { nombre_ua: 'Direccion Juridica', codigo_ua: 'DJ-001' },
-    ua_destino: { nombre_ua: 'Archivo General', codigo_ua: 'AG-001' },
-  },
-  {
-    id_turnado: 'turn-5',
-    id_doc_entrante: 'doc-5',
-    fecha_turnado: new Date(Date.now() - 86400000).toISOString(),
-    fecha_vencimiento: new Date(Date.now() + 86400000 * 10).toISOString(),
-    instruccion: 'Tramitar licencia',
-    porcentaje_avance: 50,
-    estatus_turnado: 'En_Proceso',
-    tbl_documento_entrante: { folio_interno: 'DOC-2025-0152', asunto: 'Tramite de licencia de funcionamiento' },
-    ua_origen: { nombre_ua: 'Direccion Juridica', codigo_ua: 'DJ-001' },
-    ua_destino: { nombre_ua: 'Ventanilla Unica', codigo_ua: 'VU-001' },
-  },
-];
 
 export default function BandejaTurnadosPage() {
   const navigate = useNavigate();
@@ -117,9 +51,44 @@ export default function BandejaTurnadosPage() {
   const fetchTurnados = async () => {
     setLoading(true);
 
-    // En modo desarrollo, usar datos mock
+    // En modo desarrollo, usar devStorage
     if (isDevMode || DEV_MODE) {
-      setTurnados(vista === 'recibidos' ? MOCK_TURNADOS_RECIBIDOS : MOCK_TURNADOS_ENVIADOS);
+      const idUaUsuario = usuario?.unidad_administrativa?.id_ua || 'ua-001';
+      const unidades = devUnidades.getAll();
+      const documentos = devDocumentosEntrantes.getAll();
+
+      let turnadosData: any[] = [];
+
+      if (vista === 'recibidos') {
+        turnadosData = devTurnados.getRecibidos(idUaUsuario);
+      } else {
+        turnadosData = devTurnados.getEnviados(idUaUsuario);
+      }
+
+      // Enriquecer turnados con datos de documentos y unidades
+      const turnadosEnriquecidos = turnadosData.map(t => {
+        const doc = documentos.find(d => d.id_doc_entrante === t.id_doc_entrante);
+        const uaOrigen = unidades.find(u => u.id_ua === t.id_ua_origen);
+        const uaDestino = unidades.find(u => u.id_ua === t.id_ua_destino);
+
+        return {
+          ...t,
+          tbl_documento_entrante: doc ? {
+            folio_interno: doc.folio_interno,
+            asunto: doc.asunto,
+          } : null,
+          ua_origen: uaOrigen ? {
+            nombre_ua: uaOrigen.nombre_ua,
+            codigo_ua: uaOrigen.codigo_ua,
+          } : null,
+          ua_destino: uaDestino ? {
+            nombre_ua: uaDestino.nombre_ua,
+            codigo_ua: uaDestino.codigo_ua,
+          } : null,
+        };
+      });
+
+      setTurnados(turnadosEnriquecidos);
       setLoading(false);
       return;
     }
@@ -147,7 +116,13 @@ export default function BandejaTurnadosPage() {
 
   const handleRecibir = async (turnado: any) => {
     if (isDevMode || DEV_MODE) {
-      toast.success('Documento recibido (modo desarrollo)');
+      const resultado = devTurnados.recibir(turnado.id_turnado);
+      if (resultado) {
+        toast.success('Documento recibido correctamente');
+        fetchTurnados();
+      } else {
+        toast.error('Error al recibir documento');
+      }
       return;
     }
 
@@ -175,8 +150,19 @@ export default function BandejaTurnadosPage() {
     if (!selectedTurnado) return;
 
     if (isDevMode || DEV_MODE) {
-      toast.success(`Avance registrado: ${nuevoAvance}% (modo desarrollo)`);
-      onAvanceClose();
+      const resultado = devTurnados.actualizarAvance(
+        selectedTurnado.id_turnado,
+        nuevoAvance,
+        comentarioAvance || undefined
+      );
+
+      if (resultado) {
+        toast.success(`Avance registrado: ${nuevoAvance}%`);
+        onAvanceClose();
+        fetchTurnados();
+      } else {
+        toast.error('Error al registrar avance');
+      }
       return;
     }
 
@@ -219,8 +205,15 @@ export default function BandejaTurnadosPage() {
     }
 
     if (isDevMode || DEV_MODE) {
-      toast.success('Documento rechazado (modo desarrollo)');
-      onRechazoClose();
+      const resultado = devTurnados.rechazar(selectedTurnado.id_turnado, motivoRechazo);
+
+      if (resultado) {
+        toast.success('Documento rechazado correctamente');
+        onRechazoClose();
+        fetchTurnados();
+      } else {
+        toast.error('Error al rechazar documento');
+      }
       return;
     }
 
@@ -389,11 +382,7 @@ export default function BandejaTurnadosPage() {
                         isIconOnly
                         size="sm"
                         variant="light"
-                        onPress={() => {
-                          if (!isDevMode && !DEV_MODE) {
-                            navigate(`/documentos/${t.id_doc_entrante}`);
-                          }
-                        }}
+                        onPress={() => navigate(`/documentos/${t.id_doc_entrante}`)}
                       >
                         <Eye size={14} style={{ color: 'var(--theme-primary-600)' }} />
                       </Button>
@@ -449,7 +438,7 @@ export default function BandejaTurnadosPage() {
       {/* Info dev */}
       {(isDevMode || DEV_MODE) && (
         <p className="text-xs text-center text-gray-400">
-          Modo desarrollo - Mostrando {turnados.length} turnados de ejemplo
+          Modo desarrollo - Mostrando {turnados.length} turnados desde localStorage
         </p>
       )}
 

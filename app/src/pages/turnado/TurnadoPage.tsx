@@ -14,74 +14,10 @@ import {
 } from '@nextui-org/react';
 import { ArrowLeft, Send, FileText, Calendar } from 'lucide-react';
 import { supabase, DEV_MODE } from '../../lib/supabase';
+import { devDocumentosEntrantes, devTurnados, devUnidades } from '../../lib/devStorage';
 import { useAuth } from '../../contexts/AuthContext';
 import { toast } from 'sonner';
 import type { UnidadAdministrativa } from '../../types/database';
-
-// Mock data for development mode
-const MOCK_DOCUMENTO = {
-  id_doc_entrante: 'mock-doc-001',
-  folio_interno: 'DOC-2025-0156',
-  fecha_registro: new Date().toISOString(),
-  asunto: 'Solicitud de informacion sobre programa de apoyo social 2025 para comunidades rurales',
-  remitente_nombre: 'Lic. Maria Garcia Lopez',
-  cat_unidad_administrativa: {
-    id_ua: 'mock-ua-1',
-    codigo_ua: 'DG-001',
-    nombre_ua: 'Direccion General de Correspondencia',
-  },
-};
-
-const MOCK_UNIDADES: UnidadAdministrativa[] = [
-  {
-    id_ua: 'mock-ua-2',
-    codigo_ua: 'DPS-001',
-    nombre_ua: 'Direccion de Programas Sociales',
-    nivel_jerarquico: 2,
-    id_ua_superior: null,
-    direccion: null,
-    telefono: null,
-    extension: null,
-    estatus: true,
-    fecha_creacion: '',
-  },
-  {
-    id_ua: 'mock-ua-3',
-    codigo_ua: 'DAF-001',
-    nombre_ua: 'Direccion de Administracion y Finanzas',
-    nivel_jerarquico: 2,
-    id_ua_superior: null,
-    direccion: null,
-    telefono: null,
-    extension: null,
-    estatus: true,
-    fecha_creacion: '',
-  },
-  {
-    id_ua: 'mock-ua-4',
-    codigo_ua: 'DJ-001',
-    nombre_ua: 'Direccion Juridica',
-    nivel_jerarquico: 2,
-    id_ua_superior: null,
-    direccion: null,
-    telefono: null,
-    extension: null,
-    estatus: true,
-    fecha_creacion: '',
-  },
-  {
-    id_ua: 'mock-ua-5',
-    codigo_ua: 'OT-001',
-    nombre_ua: 'Oficina del Titular',
-    nivel_jerarquico: 1,
-    id_ua_superior: null,
-    direccion: null,
-    telefono: null,
-    extension: null,
-    estatus: true,
-    fecha_creacion: '',
-  },
-];
 
 export default function TurnadoPage() {
   const { docId } = useParams();
@@ -106,10 +42,21 @@ export default function TurnadoPage() {
   }, [docId]);
 
   const fetchDocumento = async () => {
-    // En modo desarrollo, usar datos mock
+    // En modo desarrollo, usar devStorage
     if (isDevMode || DEV_MODE) {
-      await new Promise(resolve => setTimeout(resolve, 300));
-      setDocumento(MOCK_DOCUMENTO);
+      const doc = devDocumentosEntrantes.getById(docId!);
+      if (doc) {
+        const unidadesAll = devUnidades.getAll();
+        const unidadRegistro = unidadesAll.find(u => u.id_ua === doc.id_ua_registro);
+        setDocumento({
+          ...doc,
+          cat_unidad_administrativa: unidadRegistro ? {
+            id_ua: unidadRegistro.id_ua,
+            codigo_ua: unidadRegistro.codigo_ua,
+            nombre_ua: unidadRegistro.nombre_ua,
+          } : null,
+        });
+      }
       return;
     }
 
@@ -122,9 +69,14 @@ export default function TurnadoPage() {
   };
 
   const fetchUnidades = async () => {
-    // En modo desarrollo, usar datos mock
+    // En modo desarrollo, usar devStorage
     if (isDevMode || DEV_MODE) {
-      setUnidades(MOCK_UNIDADES);
+      const unidadesActivas = devUnidades.getActive();
+      // Filtrar la unidad del usuario actual si existe
+      const unidadesFiltradas = unidadesActivas.filter(u =>
+        u.id_ua !== (usuario?.unidad_administrativa?.id_ua || usuario?.id_ua)
+      );
+      setUnidades(unidadesFiltradas);
       return;
     }
 
@@ -149,13 +101,29 @@ export default function TurnadoPage() {
     const fechaVencimiento = new Date();
     fechaVencimiento.setDate(fechaVencimiento.getDate() + dias);
 
-    // En modo desarrollo, simular turnado
+    // En modo desarrollo, usar devStorage para persistencia real
     if (isDevMode || DEV_MODE) {
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      const unidadDestino = unidades.find(u => u.id_ua === formData.id_ua_destino);
-      toast.success(`Documento turnado a ${unidadDestino?.nombre_ua || 'unidad destino'} (modo desarrollo)`);
-      navigate('/turnado');
-      setLoading(false);
+      try {
+        devTurnados.create({
+          id_doc_entrante: docId!,
+          id_ua_origen: usuario?.unidad_administrativa?.id_ua || 'ua-001',
+          id_usuario_turno: usuario?.id_usuario || 'usr-001',
+          id_ua_destino: formData.id_ua_destino,
+          instruccion: formData.instruccion || null,
+          observaciones: formData.observaciones || null,
+          dias_para_atencion: dias,
+          fecha_vencimiento: fechaVencimiento.toISOString(),
+        });
+
+        const unidadDestino = unidades.find(u => u.id_ua === formData.id_ua_destino);
+        toast.success(`Documento turnado a ${unidadDestino?.nombre_ua || 'unidad destino'}`);
+        navigate('/turnado');
+      } catch (error) {
+        console.error(error);
+        toast.error('Error al turnar documento');
+      } finally {
+        setLoading(false);
+      }
       return;
     }
 
@@ -345,7 +313,7 @@ export default function TurnadoPage() {
       {/* Info de modo desarrollo */}
       {(isDevMode || DEV_MODE) && (
         <p className="text-xs text-center text-gray-400">
-          Modo desarrollo - El turnado no se guardara en base de datos
+          Modo desarrollo - Los datos se guardan en localStorage
         </p>
       )}
     </div>

@@ -24,6 +24,7 @@ import {
 } from '@nextui-org/react';
 import { Plus, Search, Edit, Users, UserX, UserCheck, RefreshCw } from 'lucide-react';
 import { supabase, DEV_MODE } from '../../lib/supabase';
+import { devUsuarios, devRoles, devUnidades } from '../../lib/devStorage';
 import { toast } from 'sonner';
 import { useAuth } from '../../contexts/AuthContext';
 import type { Usuario, Rol, UnidadAdministrativa } from '../../types/database';
@@ -32,88 +33,6 @@ interface UsuarioExtendido extends Usuario {
   cat_roles?: Rol;
   cat_unidad_administrativa?: UnidadAdministrativa;
 }
-
-// Datos mock para modo desarrollo
-const MOCK_ROLES: Rol[] = [
-  { id_rol: 'mock-rol-1', nombre_rol: 'Administrador General', descripcion: null, elementos_menu: {}, estatus: true, fecha_creacion: '' },
-  { id_rol: 'mock-rol-2', nombre_rol: 'Administrador de UA', descripcion: null, elementos_menu: {}, estatus: true, fecha_creacion: '' },
-  { id_rol: 'mock-rol-3', nombre_rol: 'Operador', descripcion: null, elementos_menu: {}, estatus: true, fecha_creacion: '' },
-  { id_rol: 'mock-rol-4', nombre_rol: 'Consulta', descripcion: null, elementos_menu: {}, estatus: true, fecha_creacion: '' },
-];
-
-const MOCK_UNIDADES: UnidadAdministrativa[] = [
-  { id_ua: 'mock-ua-1', nombre_ua: 'Direccion General', codigo_ua: 'DG-001', nivel_jerarquico: 1, id_ua_superior: null, direccion: null, telefono: null, extension: null, estatus: true, fecha_creacion: '' },
-  { id_ua: 'mock-ua-2', nombre_ua: 'Recursos Humanos', codigo_ua: 'RH-001', nivel_jerarquico: 2, id_ua_superior: 'mock-ua-1', direccion: null, telefono: null, extension: null, estatus: true, fecha_creacion: '' },
-  { id_ua: 'mock-ua-3', nombre_ua: 'Finanzas', codigo_ua: 'FIN-001', nivel_jerarquico: 2, id_ua_superior: 'mock-ua-1', direccion: null, telefono: null, extension: null, estatus: true, fecha_creacion: '' },
-];
-
-const MOCK_USUARIOS: UsuarioExtendido[] = [
-  {
-    id_usuario: 'mock-user-1',
-    clave_servidor_publico: 'CSP-001',
-    nombre_completo: 'Lic. Maria Garcia Lopez',
-    correo_institucional: 'maria.garcia@gobierno.gob.mx',
-    telefono: '55-1234-5678',
-    id_ua: 'mock-ua-1',
-    id_rol: 'mock-rol-1',
-    estatus: 'Activo',
-    fecha_creacion: new Date().toISOString(),
-    cat_roles: MOCK_ROLES[0],
-    cat_unidad_administrativa: MOCK_UNIDADES[0],
-  },
-  {
-    id_usuario: 'mock-user-2',
-    clave_servidor_publico: 'CSP-002',
-    nombre_completo: 'Ing. Roberto Martinez Perez',
-    correo_institucional: 'roberto.martinez@gobierno.gob.mx',
-    telefono: '55-2345-6789',
-    id_ua: 'mock-ua-2',
-    id_rol: 'mock-rol-2',
-    estatus: 'Activo',
-    fecha_creacion: new Date().toISOString(),
-    cat_roles: MOCK_ROLES[1],
-    cat_unidad_administrativa: MOCK_UNIDADES[1],
-  },
-  {
-    id_usuario: 'mock-user-3',
-    clave_servidor_publico: 'CSP-003',
-    nombre_completo: 'C.P. Ana Hernandez Torres',
-    correo_institucional: 'ana.hernandez@gobierno.gob.mx',
-    telefono: '55-3456-7890',
-    id_ua: 'mock-ua-3',
-    id_rol: 'mock-rol-3',
-    estatus: 'Activo',
-    fecha_creacion: new Date().toISOString(),
-    cat_roles: MOCK_ROLES[2],
-    cat_unidad_administrativa: MOCK_UNIDADES[2],
-  },
-  {
-    id_usuario: 'mock-user-4',
-    clave_servidor_publico: 'CSP-004',
-    nombre_completo: 'Lic. Carlos Ruiz Sanchez',
-    correo_institucional: 'carlos.ruiz@gobierno.gob.mx',
-    telefono: '55-4567-8901',
-    id_ua: 'mock-ua-1',
-    id_rol: 'mock-rol-4',
-    estatus: 'Inhabilitado',
-    fecha_creacion: new Date().toISOString(),
-    cat_roles: MOCK_ROLES[3],
-    cat_unidad_administrativa: MOCK_UNIDADES[0],
-  },
-  {
-    id_usuario: 'mock-user-5',
-    clave_servidor_publico: 'CSP-005',
-    nombre_completo: 'Arq. Patricia Sanchez Luna',
-    correo_institucional: 'patricia.sanchez@gobierno.gob.mx',
-    telefono: '55-5678-9012',
-    id_ua: 'mock-ua-2',
-    id_rol: 'mock-rol-3',
-    estatus: 'Activo',
-    fecha_creacion: new Date().toISOString(),
-    cat_roles: MOCK_ROLES[2],
-    cat_unidad_administrativa: MOCK_UNIDADES[1],
-  },
-];
 
 export default function UsuariosPage() {
   const { usuario: currentUser, isAdmin, isDevMode } = useAuth();
@@ -141,11 +60,28 @@ export default function UsuariosPage() {
   const fetchData = async () => {
     setLoading(true);
 
-    // En modo desarrollo, usar datos mock
+    // En modo desarrollo, usar devStorage
     if (isDevMode || DEV_MODE) {
-      setUsuarios(MOCK_USUARIOS);
-      setRoles(MOCK_ROLES);
-      setUnidades(MOCK_UNIDADES);
+      // Obtener datos desde devStorage
+      const rolesData = devRoles.getActive();
+      const unidadesData = devUnidades.getActive();
+      const usuariosData = devUsuarios.getAll();
+
+      // Expandir usuarios con sus relaciones
+      const usuariosExtendidos: UsuarioExtendido[] = usuariosData.map(usr => ({
+        ...usr,
+        cat_roles: rolesData.find(r => r.id_rol === usr.id_rol),
+        cat_unidad_administrativa: unidadesData.find(u => u.id_ua === usr.id_ua),
+      }));
+
+      // Si no es admin, filtrar por UA
+      const usuariosFiltrados = isAdmin
+        ? usuariosExtendidos
+        : usuariosExtendidos.filter(u => u.id_ua === currentUser?.id_ua);
+
+      setUsuarios(usuariosFiltrados);
+      setRoles(rolesData);
+      setUnidades(unidadesData);
       setLoading(false);
       return;
     }
@@ -212,11 +148,40 @@ export default function UsuariosPage() {
       return;
     }
 
-    // En modo desarrollo, simular guardado
+    // En modo desarrollo, usar devStorage
     if (isDevMode || DEV_MODE) {
-      await new Promise(resolve => setTimeout(resolve, 500));
-      toast.success(editingUser ? 'Usuario actualizado (modo desarrollo)' : 'Usuario creado (modo desarrollo)');
-      onClose();
+      if (editingUser) {
+        // Actualizar usuario existente
+        const updated = devUsuarios.update(editingUser.id_usuario, {
+          clave_servidor_publico: formData.clave_servidor_publico,
+          nombre_completo: formData.nombre_completo,
+          correo_institucional: formData.correo_institucional,
+          telefono: formData.telefono || null,
+          id_ua: formData.id_ua,
+          id_rol: formData.id_rol,
+        });
+        if (updated) {
+          toast.success('Usuario actualizado');
+          await fetchData();
+          onClose();
+        } else {
+          toast.error('Error al actualizar usuario');
+        }
+      } else {
+        // Crear nuevo usuario
+        devUsuarios.create({
+          clave_servidor_publico: formData.clave_servidor_publico,
+          nombre_completo: formData.nombre_completo,
+          correo_institucional: formData.correo_institucional,
+          telefono: formData.telefono || null,
+          id_ua: formData.id_ua,
+          id_rol: formData.id_rol,
+          estatus: 'Activo',
+        });
+        toast.success('Usuario creado');
+        await fetchData();
+        onClose();
+      }
       return;
     }
 
@@ -248,9 +213,15 @@ export default function UsuariosPage() {
   const handleToggleStatus = async (user: UsuarioExtendido) => {
     const newStatus = user.estatus === 'Activo' ? 'Inhabilitado' : 'Activo';
 
-    // En modo desarrollo, simular cambio
+    // En modo desarrollo, usar devStorage
     if (isDevMode || DEV_MODE) {
-      toast.success(`Usuario ${newStatus === 'Activo' ? 'activado' : 'inhabilitado'} (modo desarrollo)`);
+      const updated = devUsuarios.toggleStatus(user.id_usuario);
+      if (updated) {
+        toast.success(`Usuario ${newStatus === 'Activo' ? 'activado' : 'inhabilitado'}`);
+        await fetchData();
+      } else {
+        toast.error('Error al cambiar estatus');
+      }
       return;
     }
 

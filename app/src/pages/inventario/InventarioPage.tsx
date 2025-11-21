@@ -25,19 +25,10 @@ import {
 } from '@nextui-org/react';
 import { Plus, Search, Edit, Package, Trash2, RefreshCw, Filter } from 'lucide-react';
 import { supabase, DEV_MODE } from '../../lib/supabase';
+import { devInventario, devUnidades, devCatalogos } from '../../lib/devStorage';
 import { useAuth } from '../../contexts/AuthContext';
 import { toast } from 'sonner';
-import type { Inventario } from '../../types/database';
-
-const categorias = [
-  'Mobiliario',
-  'Equipo de Computo',
-  'Equipo de Oficina',
-  'Vehiculos',
-  'Herramientas',
-  'Material de Oficina',
-  'Otros',
-];
+import type { Inventario, UnidadAdministrativa, ValorCatalogo } from '../../types/database';
 
 const estados = [
   { key: 'Bueno', label: 'Bueno', color: 'success' },
@@ -46,133 +37,11 @@ const estados = [
   { key: 'Baja', label: 'Baja', color: 'default' },
 ];
 
-// Datos mock para modo desarrollo
-const MOCK_INVENTARIO: Inventario[] = [
-  {
-    id_inventario: 'mock-inv-1',
-    id_ua: 'ua1',
-    categoria: 'Equipo de Computo',
-    descripcion: 'Laptop HP ProBook 450 G8 - Intel Core i7',
-    cantidad: 1,
-    unidad: 'Pieza',
-    estado: 'Bueno',
-    ubicacion: 'Oficina 201, Edificio Principal',
-    responsable: 'Lic. Maria Garcia Lopez',
-    numero_inventario: 'INV-2025-0001',
-    fecha_adquisicion: '2024-01-15',
-    valor_unitario: 25000,
-    valor_total: 25000,
-    proveedor: 'HP Mexico',
-    marca: 'HP',
-    modelo: 'ProBook 450 G8',
-    serie: 'ABC123456',
-    fecha_registro: new Date().toISOString(),
-  },
-  {
-    id_inventario: 'mock-inv-2',
-    id_ua: 'ua1',
-    categoria: 'Mobiliario',
-    descripcion: 'Escritorio ejecutivo de madera con cajones',
-    cantidad: 1,
-    unidad: 'Pieza',
-    estado: 'Bueno',
-    ubicacion: 'Oficina 201, Edificio Principal',
-    responsable: 'Lic. Maria Garcia Lopez',
-    numero_inventario: 'INV-2025-0002',
-    fecha_adquisicion: '2023-06-20',
-    valor_unitario: 8500,
-    valor_total: 8500,
-    proveedor: 'Muebles Oficina SA',
-    marca: 'Office Plus',
-    modelo: 'Ejecutivo E-500',
-    serie: null,
-    fecha_registro: new Date().toISOString(),
-  },
-  {
-    id_inventario: 'mock-inv-3',
-    id_ua: 'ua1',
-    categoria: 'Equipo de Oficina',
-    descripcion: 'Impresora multifuncional a color',
-    cantidad: 1,
-    unidad: 'Pieza',
-    estado: 'Regular',
-    ubicacion: 'Area de copiado, Planta Baja',
-    responsable: 'Ing. Roberto Martinez',
-    numero_inventario: 'INV-2024-0089',
-    fecha_adquisicion: '2022-03-10',
-    valor_unitario: 15000,
-    valor_total: 15000,
-    proveedor: 'Epson Mexico',
-    marca: 'Epson',
-    modelo: 'EcoTank L6270',
-    serie: 'XYZ789012',
-    fecha_registro: new Date().toISOString(),
-  },
-  {
-    id_inventario: 'mock-inv-4',
-    id_ua: 'ua1',
-    categoria: 'Mobiliario',
-    descripcion: 'Sillas ejecutivas ergonomicas',
-    cantidad: 10,
-    unidad: 'Pieza',
-    estado: 'Bueno',
-    ubicacion: 'Sala de juntas, Piso 2',
-    responsable: 'C.P. Ana Hernandez',
-    numero_inventario: 'INV-2024-0056',
-    fecha_adquisicion: '2023-09-05',
-    valor_unitario: 3500,
-    valor_total: 35000,
-    proveedor: 'Muebles Oficina SA',
-    marca: 'ErgoMax',
-    modelo: 'Comfort Pro',
-    serie: null,
-    fecha_registro: new Date().toISOString(),
-  },
-  {
-    id_inventario: 'mock-inv-5',
-    id_ua: 'ua1',
-    categoria: 'Vehiculos',
-    descripcion: 'Vehiculo oficial Nissan Sentra 2023',
-    cantidad: 1,
-    unidad: 'Pieza',
-    estado: 'Bueno',
-    ubicacion: 'Estacionamiento oficial',
-    responsable: 'Lic. Carlos Ruiz',
-    numero_inventario: 'INV-2023-0123',
-    fecha_adquisicion: '2023-01-20',
-    valor_unitario: 350000,
-    valor_total: 350000,
-    proveedor: 'Nissan Automotriz',
-    marca: 'Nissan',
-    modelo: 'Sentra 2023',
-    serie: 'VIN123456789',
-    fecha_registro: new Date().toISOString(),
-  },
-  {
-    id_inventario: 'mock-inv-6',
-    id_ua: 'ua1',
-    categoria: 'Equipo de Computo',
-    descripcion: 'Monitor LED 27 pulgadas',
-    cantidad: 5,
-    unidad: 'Pieza',
-    estado: 'Malo',
-    ubicacion: 'Almacen general',
-    responsable: 'Ing. Roberto Martinez',
-    numero_inventario: 'INV-2022-0045',
-    fecha_adquisicion: '2020-11-15',
-    valor_unitario: 4500,
-    valor_total: 22500,
-    proveedor: 'Dell Mexico',
-    marca: 'Dell',
-    modelo: 'P2719H',
-    serie: null,
-    fecha_registro: new Date().toISOString(),
-  },
-];
-
 export default function InventarioPage() {
   const { usuario, isDevMode } = useAuth();
   const [inventario, setInventario] = useState<Inventario[]>([]);
+  const [, setUnidades] = useState<UnidadAdministrativa[]>([]);
+  const [categorias, setCategorias] = useState<ValorCatalogo[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [filtroCategoria, setFiltroCategoria] = useState('todas');
@@ -200,20 +69,66 @@ export default function InventarioPage() {
   });
 
   useEffect(() => {
+    fetchUnidades();
+    fetchCategorias();
+  }, []);
+
+  useEffect(() => {
     fetchInventario();
   }, [page, filtroCategoria]);
+
+  const fetchUnidades = async () => {
+    // En modo desarrollo, usar devStorage
+    if (isDevMode || DEV_MODE) {
+      const data = devUnidades.getActive();
+      setUnidades(data);
+      return;
+    }
+
+    // Produccion
+    const { data, error } = await supabase
+      .from('cat_unidades_administrativas')
+      .select('*')
+      .eq('estatus', true)
+      .order('nombre_ua');
+
+    if (!error && data) {
+      setUnidades(data);
+    }
+  };
+
+  const fetchCategorias = async () => {
+    // En modo desarrollo, usar devStorage
+    if (isDevMode || DEV_MODE) {
+      const data = devCatalogos.getByTipo('Categoria_Inventario');
+      setCategorias(data);
+      return;
+    }
+
+    // Produccion
+    const { data, error } = await supabase
+      .from('cat_valores_catalogo')
+      .select('*')
+      .eq('tipo_catalogo', 'Categoria_Inventario')
+      .eq('estatus', true)
+      .order('orden_presentacion');
+
+    if (!error && data) {
+      setCategorias(data);
+    }
+  };
 
   const fetchInventario = async () => {
     setLoading(true);
 
-    // En modo desarrollo, usar datos mock
+    // En modo desarrollo, usar devStorage
     if (isDevMode || DEV_MODE) {
-      let filtered = [...MOCK_INVENTARIO];
+      let data = devInventario.getAll();
       if (filtroCategoria !== 'todas') {
-        filtered = filtered.filter(i => i.categoria === filtroCategoria);
+        data = data.filter(i => i.categoria === filtroCategoria);
       }
-      setInventario(filtered);
-      setTotal(filtered.length);
+      setInventario(data);
+      setTotal(data.length);
       setLoading(false);
       return;
     }
@@ -281,21 +196,13 @@ export default function InventarioPage() {
   };
 
   const handleSubmit = async () => {
-    if (!formData.descripcion || !formData.numero_inventario || !formData.categoria) {
+    if (!formData.descripcion || !formData.categoria) {
       toast.error('Completa los campos requeridos');
       return;
     }
 
-    // En modo desarrollo, simular guardado
-    if (isDevMode || DEV_MODE) {
-      await new Promise(resolve => setTimeout(resolve, 500));
-      toast.success(editingItem ? 'Articulo actualizado (modo desarrollo)' : 'Articulo registrado (modo desarrollo)');
-      onClose();
-      return;
-    }
-
     const payload = {
-      id_ua: usuario?.unidad_administrativa?.id_ua,
+      id_ua: usuario?.unidad_administrativa?.id_ua || 'ua-001',
       categoria: formData.categoria,
       descripcion: formData.descripcion,
       cantidad: parseInt(formData.cantidad) || 1,
@@ -303,7 +210,6 @@ export default function InventarioPage() {
       estado: formData.estado as 'Bueno' | 'Regular' | 'Malo' | 'Baja',
       ubicacion: formData.ubicacion,
       responsable: formData.responsable,
-      numero_inventario: formData.numero_inventario,
       fecha_adquisicion: formData.fecha_adquisicion,
       valor_unitario: parseFloat(formData.valor_unitario) || 0,
       proveedor: formData.proveedor || null,
@@ -312,48 +218,80 @@ export default function InventarioPage() {
       serie: formData.serie || null,
     };
 
+    // En modo desarrollo, usar devStorage
+    if (isDevMode || DEV_MODE) {
+      try {
+        if (editingItem) {
+          devInventario.update(editingItem.id_inventario, payload);
+          toast.success('Articulo actualizado correctamente');
+        } else {
+          devInventario.create(payload);
+          toast.success('Articulo registrado correctamente');
+        }
+        await fetchInventario();
+        onClose();
+      } catch (error) {
+        toast.error('Error al guardar el articulo');
+      }
+      return;
+    }
+
+    // Produccion
     if (editingItem) {
       const { error } = await supabase
         .from('tbl_inventario')
-        .update(payload)
+        .update({
+          ...payload,
+          numero_inventario: formData.numero_inventario,
+        })
         .eq('id_inventario', editingItem.id_inventario);
 
       if (error) {
         toast.error('Error al actualizar');
       } else {
         toast.success('Articulo actualizado');
-        fetchInventario();
+        await fetchInventario();
         onClose();
       }
     } else {
-      const { error } = await supabase.from('tbl_inventario').insert(payload);
+      const { error } = await supabase.from('tbl_inventario').insert({
+        ...payload,
+        numero_inventario: formData.numero_inventario,
+      });
 
       if (error) {
         toast.error('Error al crear articulo');
       } else {
         toast.success('Articulo registrado');
-        fetchInventario();
+        await fetchInventario();
         onClose();
       }
     }
   };
 
   const handleDelete = async (id: string, descripcion: string) => {
-    // En modo desarrollo, simular eliminacion
+    if (!confirm('Eliminar este articulo?')) return;
+
+    // En modo desarrollo, usar devStorage
     if (isDevMode || DEV_MODE) {
-      toast.success(`"${descripcion}" eliminado (modo desarrollo)`);
+      const success = devInventario.delete(id);
+      if (success) {
+        toast.success(`"${descripcion}" eliminado correctamente`);
+        await fetchInventario();
+      } else {
+        toast.error('Error al eliminar el articulo');
+      }
       return;
     }
 
-    if (!confirm('Eliminar este articulo?')) return;
-
+    // Produccion
     const { error } = await supabase.from('tbl_inventario').delete().eq('id_inventario', id);
 
     if (error) {
       toast.error('Error al eliminar');
     } else {
       toast.success('Articulo eliminado');
-      fetchInventario();
+      await fetchInventario();
     }
   };
 
@@ -375,6 +313,11 @@ export default function InventarioPage() {
       item.numero_inventario.toLowerCase().includes(search.toLowerCase()) ||
       item.categoria.toLowerCase().includes(search.toLowerCase())
   );
+
+  // Obtener lista de categorias para el select
+  const categoriasOptions = categorias.length > 0
+    ? categorias.map(c => c.valor)
+    : ['Equipo de Computo', 'Mobiliario', 'Vehiculos', 'Equipo de Oficina'];
 
   return (
     <div className="space-y-4 sm:space-y-6">
@@ -431,7 +374,7 @@ export default function InventarioPage() {
               className="w-full sm:w-48"
               size="sm"
             >
-              {['todas', ...categorias].map((cat) => (
+              {['todas', ...categoriasOptions].map((cat) => (
                 <SelectItem key={cat}>{cat === 'todas' ? 'Todas' : cat}</SelectItem>
               ))}
             </Select>
@@ -548,14 +491,14 @@ export default function InventarioPage() {
           </ModalHeader>
           <ModalBody>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <Input
-                label="Numero de Inventario"
-                placeholder="INV-2025-001"
-                value={formData.numero_inventario}
-                onValueChange={(v) => setFormData({ ...formData, numero_inventario: v })}
-                isRequired
-                size="sm"
-              />
+              {editingItem && (
+                <Input
+                  label="Numero de Inventario"
+                  value={formData.numero_inventario}
+                  isReadOnly
+                  size="sm"
+                />
+              )}
               <Select
                 label="Categoria"
                 selectedKeys={formData.categoria ? [formData.categoria] : []}
@@ -565,7 +508,7 @@ export default function InventarioPage() {
                 isRequired
                 size="sm"
               >
-                {categorias.map((cat) => (
+                {categoriasOptions.map((cat) => (
                   <SelectItem key={cat}>{cat}</SelectItem>
                 ))}
               </Select>
@@ -680,7 +623,7 @@ export default function InventarioPage() {
       {/* Info de modo desarrollo */}
       {(isDevMode || DEV_MODE) && (
         <p className="text-xs text-center text-gray-400">
-          Modo desarrollo - Mostrando {filteredItems.length} articulos de ejemplo
+          Modo desarrollo - Datos persistidos en localStorage ({filteredItems.length} articulos)
         </p>
       )}
     </div>

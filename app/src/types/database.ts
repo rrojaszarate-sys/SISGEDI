@@ -96,6 +96,9 @@ export interface Turnado {
   estatus_turnado: string;
   porcentaje_avance: number;
   fecha_creacion: string;
+  fecha_ultimo_avance?: string;
+  motivo_rechazo?: string;
+  fecha_rechazo?: string;
 }
 
 export interface Inventario {

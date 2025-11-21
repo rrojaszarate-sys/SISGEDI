@@ -19,6 +19,7 @@ import {
 } from '@nextui-org/react';
 import { Plus, Search, Eye, Send, FileText, Filter, RefreshCw } from 'lucide-react';
 import { supabase, DEV_MODE } from '../../lib/supabase';
+import { devDocumentosEntrantes, devCatalogos } from '../../lib/devStorage';
 import { useAuth } from '../../contexts/AuthContext';
 import type { DocumentoEntrante, ValorCatalogo } from '../../types/database';
 
@@ -26,113 +27,6 @@ interface DocExtendido extends DocumentoEntrante {
   prioridad?: ValorCatalogo;
   tipo_documento?: ValorCatalogo;
 }
-
-// Datos mock para modo desarrollo
-const MOCK_DOCUMENTOS: DocExtendido[] = [
-  {
-    id_doc_entrante: 'mock-doc-1',
-    folio_interno: 'DOC-2025-0156',
-    numero_oficio_externo: 'OF-EXT-2025-001',
-    fecha_documento: new Date().toISOString(),
-    fecha_registro: new Date().toISOString(),
-    asunto: 'Solicitud de informacion sobre programa de apoyo social 2025',
-    id_prioridad: 'p1',
-    id_tipo_doc: 't1',
-    id_area_remitente: 'a1',
-    remitente_nombre: 'Lic. Maria Garcia Lopez',
-    remitente_cargo: 'Directora General',
-    remitente_institucion: 'Secretaria de Desarrollo Social',
-    marca_seguimiento: 'Turnarse',
-    estatus_general: 'Pendiente',
-    id_ua_registro: 'ua1',
-    id_usuario_registro: 'u1',
-    eliminado: false,
-    fecha_creacion: new Date().toISOString(),
-    prioridad: { id_valor_catalogo: 'p1', tipo_catalogo: 'PRIORIDAD', valor: 'Urgente', descripcion: null, es_modificable: true, orden_presentacion: 1, estatus: true, fecha_creacion: '' },
-  },
-  {
-    id_doc_entrante: 'mock-doc-2',
-    folio_interno: 'DOC-2025-0155',
-    numero_oficio_externo: 'OF-EXT-2025-002',
-    fecha_documento: new Date(Date.now() - 86400000).toISOString(),
-    fecha_registro: new Date(Date.now() - 86400000).toISOString(),
-    asunto: 'Convenio de colaboracion interinstitucional para proyectos de infraestructura',
-    id_prioridad: 'p2',
-    id_tipo_doc: 't2',
-    id_area_remitente: 'a2',
-    remitente_nombre: 'Ing. Roberto Martinez',
-    remitente_cargo: 'Coordinador de Proyectos',
-    remitente_institucion: 'Secretaria de Obras Publicas',
-    marca_seguimiento: 'Para_Conocimiento',
-    estatus_general: 'En_Proceso',
-    id_ua_registro: 'ua1',
-    id_usuario_registro: 'u1',
-    eliminado: false,
-    fecha_creacion: new Date().toISOString(),
-    prioridad: { id_valor_catalogo: 'p2', tipo_catalogo: 'PRIORIDAD', valor: 'Normal', descripcion: null, es_modificable: true, orden_presentacion: 2, estatus: true, fecha_creacion: '' },
-  },
-  {
-    id_doc_entrante: 'mock-doc-3',
-    folio_interno: 'DOC-2025-0154',
-    numero_oficio_externo: 'OF-EXT-2025-003',
-    fecha_documento: new Date(Date.now() - 172800000).toISOString(),
-    fecha_registro: new Date(Date.now() - 172800000).toISOString(),
-    asunto: 'Respuesta a oficio numero 123/2025 sobre revision de presupuesto',
-    id_prioridad: 'p2',
-    id_tipo_doc: 't1',
-    id_area_remitente: 'a3',
-    remitente_nombre: 'C.P. Ana Hernandez',
-    remitente_cargo: 'Tesorera',
-    remitente_institucion: 'Secretaria de Finanzas',
-    marca_seguimiento: 'Turnarse',
-    estatus_general: 'Concluido',
-    id_ua_registro: 'ua1',
-    id_usuario_registro: 'u1',
-    eliminado: false,
-    fecha_creacion: new Date().toISOString(),
-  },
-  {
-    id_doc_entrante: 'mock-doc-4',
-    folio_interno: 'DOC-2025-0153',
-    numero_oficio_externo: null,
-    fecha_documento: new Date(Date.now() - 259200000).toISOString(),
-    fecha_registro: new Date(Date.now() - 259200000).toISOString(),
-    asunto: 'Invitacion a evento oficial del gobierno estatal - Informe de actividades',
-    id_prioridad: 'p2',
-    id_tipo_doc: 't3',
-    id_area_remitente: 'a4',
-    remitente_nombre: 'Lic. Carlos Ruiz',
-    remitente_cargo: 'Secretario Particular',
-    remitente_institucion: 'Oficina del Gobernador',
-    marca_seguimiento: 'Para_Conocimiento',
-    estatus_general: 'En_Proceso',
-    id_ua_registro: 'ua1',
-    id_usuario_registro: 'u1',
-    eliminado: false,
-    fecha_creacion: new Date().toISOString(),
-  },
-  {
-    id_doc_entrante: 'mock-doc-5',
-    folio_interno: 'DOC-2025-0152',
-    numero_oficio_externo: 'OF-EXT-2025-005',
-    fecha_documento: new Date(Date.now() - 345600000).toISOString(),
-    fecha_registro: new Date(Date.now() - 345600000).toISOString(),
-    asunto: 'Tramite de licencia de funcionamiento para nuevo centro comunitario',
-    id_prioridad: 'p1',
-    id_tipo_doc: 't1',
-    id_area_remitente: 'a5',
-    remitente_nombre: 'Arq. Patricia Sanchez',
-    remitente_cargo: 'Directora de Licencias',
-    remitente_institucion: 'Secretaria de Desarrollo Urbano',
-    marca_seguimiento: 'Turnarse',
-    estatus_general: 'Pendiente',
-    id_ua_registro: 'ua1',
-    id_usuario_registro: 'u1',
-    eliminado: false,
-    fecha_creacion: new Date().toISOString(),
-    prioridad: { id_valor_catalogo: 'p1', tipo_catalogo: 'PRIORIDAD', valor: 'Urgente', descripcion: null, es_modificable: true, orden_presentacion: 1, estatus: true, fecha_creacion: '' },
-  },
-];
 
 export default function DocumentosEntrantesPage() {
   const navigate = useNavigate();
@@ -152,12 +46,24 @@ export default function DocumentosEntrantesPage() {
   const fetchDocumentos = async () => {
     setLoading(true);
 
-    // En modo desarrollo, usar datos mock
+    // En modo desarrollo, usar devStorage
     if (isDevMode || DEV_MODE) {
-      let filtered = [...MOCK_DOCUMENTOS];
+      let docs = devDocumentosEntrantes.getAll();
+
+      // Enriquecer con datos de catalogos
+      const catalogos = devCatalogos.getAll();
+      const docsEnriquecidos: DocExtendido[] = docs.map(doc => ({
+        ...doc,
+        prioridad: catalogos.find(c => c.id_valor_catalogo === doc.id_prioridad),
+        tipo_documento: catalogos.find(c => c.id_valor_catalogo === doc.id_tipo_doc),
+      }));
+
+      // Filtrar por estatus
+      let filtered = docsEnriquecidos;
       if (filtroEstatus !== 'todos') {
         filtered = filtered.filter(d => d.estatus_general === filtroEstatus);
       }
+
       setDocumentos(filtered);
       setTotal(filtered.length);
       setLoading(false);
@@ -364,11 +270,7 @@ export default function DocumentosEntrantesPage() {
                         isIconOnly
                         size="sm"
                         variant="light"
-                        onPress={() => {
-                          if (!DEV_MODE && !isDevMode) {
-                            navigate(`/documentos/${doc.id_doc_entrante}`);
-                          }
-                        }}
+                        onPress={() => navigate(`/documentos/${doc.id_doc_entrante}`)}
                       >
                         <Eye size={16} style={{ color: 'var(--theme-primary-600)' }} />
                       </Button>
@@ -379,11 +281,7 @@ export default function DocumentosEntrantesPage() {
                           isIconOnly
                           size="sm"
                           variant="light"
-                          onPress={() => {
-                            if (!DEV_MODE && !isDevMode) {
-                              navigate(`/turnado/nuevo/${doc.id_doc_entrante}`);
-                            }
-                          }}
+                          onPress={() => navigate(`/turnado/nuevo/${doc.id_doc_entrante}`)}
                         >
                           <Send size={16} className="text-green-600" />
                         </Button>
@@ -400,7 +298,7 @@ export default function DocumentosEntrantesPage() {
       {/* Info de modo desarrollo */}
       {(isDevMode || DEV_MODE) && (
         <p className="text-xs text-center text-gray-400">
-          Modo desarrollo - Mostrando {filteredDocs.length} documentos de ejemplo
+          Modo desarrollo - Mostrando {filteredDocs.length} documentos desde localStorage
         </p>
       )}
     </div>

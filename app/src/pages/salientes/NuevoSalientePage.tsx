@@ -13,6 +13,7 @@ import {
 } from '@nextui-org/react';
 import { ArrowLeft, Save, FileText } from 'lucide-react';
 import { supabase, DEV_MODE } from '../../lib/supabase';
+import { devDocumentosSalientes } from '../../lib/devStorage';
 import { useAuth } from '../../contexts/AuthContext';
 import { toast } from 'sonner';
 
@@ -45,11 +46,21 @@ export default function NuevoSalientePage() {
 
     setLoading(true);
 
-    // En modo desarrollo, simular guardado
+    // En modo desarrollo, usar devStorage
     if (isDevMode || DEV_MODE) {
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      const mockFolio = `OF-2025-${String(Math.floor(Math.random() * 1000)).padStart(4, '0')}`;
-      toast.success(`Documento ${mockFolio} creado (modo desarrollo)`);
+      const nuevoDoc = devDocumentosSalientes.create({
+        tipo_doc: formData.tipo_doc,
+        fecha_elaboracion: new Date().toISOString(),
+        asunto: formData.asunto,
+        destinatario_nombre: formData.destinatario_nombre || null,
+        destinatario_cargo: formData.destinatario_cargo || null,
+        destinatario_institucion: formData.destinatario_institucion || null,
+        contenido_cuerpo: formData.contenido || null,
+        estatus_saliente: 'Borrador',
+        id_ua_emisora: usuario?.unidad_administrativa?.id_ua || 'ua-001',
+        id_usuario_elabora: usuario?.id_usuario || 'usr-001',
+      });
+      toast.success(`Documento ${nuevoDoc.numero_folio} creado exitosamente`);
       navigate('/salientes');
       setLoading(false);
       return;
@@ -212,7 +223,7 @@ export default function NuevoSalientePage() {
       {/* Info de modo desarrollo */}
       {(isDevMode || DEV_MODE) && (
         <p className="text-xs text-center text-gray-400">
-          Modo desarrollo - El documento no se guardara en base de datos
+          Modo desarrollo - Los datos se guardan en almacenamiento local
         </p>
       )}
     </div>

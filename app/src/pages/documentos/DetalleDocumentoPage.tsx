@@ -23,71 +23,9 @@ import {
   Paperclip,
 } from 'lucide-react';
 import { supabase, DEV_MODE } from '../../lib/supabase';
+import { devDocumentosEntrantes, devTurnados, devUnidades, devCatalogos } from '../../lib/devStorage';
 import { useAuth } from '../../contexts/AuthContext';
 import { toast } from 'sonner';
-
-// Mock data for development mode
-const MOCK_DOCUMENTO = {
-  id_doc_entrante: 'mock-doc-001',
-  folio_interno: 'DOC-2025-0156',
-  numero_oficio_externo: 'OF-EXTERNO-2025-089',
-  fecha_documento: '2025-01-15',
-  fecha_registro: new Date().toISOString(),
-  asunto: 'Solicitud de informacion sobre programa de apoyo social 2025 para comunidades rurales del estado',
-  remitente_nombre: 'Lic. Maria Garcia Lopez',
-  remitente_cargo: 'Directora de Desarrollo Social',
-  remitente_institucion: 'Secretaria de Bienestar',
-  estatus_general: 'En_Proceso',
-  marca_seguimiento: 'Turnarse',
-  prioridad: { valor: 'Urgente' },
-  tipo_documento: { valor: 'Oficio' },
-  area_remitente: { valor: 'Gobierno Federal' },
-  cat_unidad_administrativa: {
-    id_ua: 'mock-ua-1',
-    codigo_ua: 'DG-001',
-    nombre_ua: 'Direccion General de Correspondencia',
-  },
-};
-
-const MOCK_TURNADOS = [
-  {
-    id_turnado: 'mock-turn-1',
-    ua_origen: { nombre_ua: 'Direccion General de Correspondencia' },
-    ua_destino: { nombre_ua: 'Direccion de Programas Sociales' },
-    estatus_turnado: 'Recibido',
-    fecha_turnado: new Date(Date.now() - 86400000 * 2).toISOString(),
-    fecha_vencimiento: new Date(Date.now() + 86400000 * 5).toISOString(),
-    instruccion: 'Para su atencion y seguimiento correspondiente',
-    porcentaje_avance: 45,
-  },
-  {
-    id_turnado: 'mock-turn-2',
-    ua_origen: { nombre_ua: 'Oficina del Titular' },
-    ua_destino: { nombre_ua: 'Direccion General de Correspondencia' },
-    estatus_turnado: 'Concluido',
-    fecha_turnado: new Date(Date.now() - 86400000 * 5).toISOString(),
-    fecha_vencimiento: new Date(Date.now() - 86400000 * 2).toISOString(),
-    instruccion: 'Turnar a area correspondiente para su atencion',
-    porcentaje_avance: 100,
-  },
-];
-
-const MOCK_ANEXOS = [
-  {
-    id_anexo: 'mock-anexo-1',
-    nombre_archivo: 'Oficio_Solicitud_2025.pdf',
-    storage_path: 'mock-path/oficio.pdf',
-    tamano_bytes: 245760,
-    tipo_mime: 'application/pdf',
-  },
-  {
-    id_anexo: 'mock-anexo-2',
-    nombre_archivo: 'Anexo_Estadisticas.xlsx',
-    storage_path: 'mock-path/estadisticas.xlsx',
-    tamano_bytes: 89120,
-    tipo_mime: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-  },
-];
 
 export default function DetalleDocumentoPage() {
   const { id } = useParams();
@@ -105,12 +43,43 @@ export default function DetalleDocumentoPage() {
   const fetchDocumento = async () => {
     setLoading(true);
 
-    // En modo desarrollo, usar datos mock
+    // En modo desarrollo, usar devStorage
     if (isDevMode || DEV_MODE) {
-      await new Promise(resolve => setTimeout(resolve, 500));
-      setDocumento(MOCK_DOCUMENTO);
-      setTurnados(MOCK_TURNADOS);
-      setAnexos(MOCK_ANEXOS);
+      const doc = devDocumentosEntrantes.getById(id!);
+
+      if (doc) {
+        // Enriquecer con datos de catalogos y unidades
+        const catalogos = devCatalogos.getAll();
+        const unidades = devUnidades.getAll();
+        const unidadRegistro = unidades.find(u => u.id_ua === doc.id_ua_registro);
+
+        const docEnriquecido = {
+          ...doc,
+          prioridad: catalogos.find(c => c.id_valor_catalogo === doc.id_prioridad),
+          tipo_documento: catalogos.find(c => c.id_valor_catalogo === doc.id_tipo_doc),
+          area_remitente: catalogos.find(c => c.id_valor_catalogo === doc.id_area_remitente),
+          cat_unidad_administrativa: unidadRegistro ? {
+            id_ua: unidadRegistro.id_ua,
+            codigo_ua: unidadRegistro.codigo_ua,
+            nombre_ua: unidadRegistro.nombre_ua,
+          } : null,
+        };
+
+        setDocumento(docEnriquecido);
+
+        // Obtener turnados del documento
+        const turnadosDoc = devTurnados.getByDocumento(id!);
+        const turnadosEnriquecidos = turnadosDoc.map(t => ({
+          ...t,
+          ua_origen: unidades.find(u => u.id_ua === t.id_ua_origen),
+          ua_destino: unidades.find(u => u.id_ua === t.id_ua_destino),
+        }));
+        setTurnados(turnadosEnriquecidos);
+
+        // En modo dev no hay anexos reales, usar array vacio
+        setAnexos([]);
+      }
+
       setLoading(false);
       return;
     }
@@ -468,7 +437,7 @@ export default function DetalleDocumentoPage() {
       {/* Info de modo desarrollo */}
       {(isDevMode || DEV_MODE) && (
         <p className="text-xs text-center text-gray-400">
-          Modo desarrollo - Datos de ejemplo
+          Modo desarrollo - Datos desde localStorage
         </p>
       )}
     </div>

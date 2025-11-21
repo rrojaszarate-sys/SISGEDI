@@ -23,6 +23,7 @@ import {
 } from '@nextui-org/react';
 import { Plus, Search, Edit, Trash2, Building2, RefreshCw } from 'lucide-react';
 import { supabase, DEV_MODE } from '../../lib/supabase';
+import { devUnidades } from '../../lib/devStorage';
 import { useAuth } from '../../contexts/AuthContext';
 import { toast } from 'sonner';
 import type { UnidadAdministrativa } from '../../types/database';
@@ -32,70 +33,6 @@ const nivelesJerarquicos = [
   { key: '2', label: 'Direccion General' },
   { key: '3', label: 'Direccion' },
   { key: '4', label: 'Jefatura/Subdireccion' },
-];
-
-// Datos mock para modo desarrollo
-const MOCK_UNIDADES: UnidadAdministrativa[] = [
-  {
-    id_ua: 'mock-ua-1',
-    nombre_ua: 'Subsecretaria de Administracion',
-    codigo_ua: 'SSA-001',
-    nivel_jerarquico: 1,
-    id_ua_superior: null,
-    direccion: 'Av. Principal 123, Centro',
-    telefono: '55-1234-5678',
-    extension: '1001',
-    estatus: true,
-    fecha_creacion: new Date().toISOString(),
-  },
-  {
-    id_ua: 'mock-ua-2',
-    nombre_ua: 'Direccion General de Recursos Humanos',
-    codigo_ua: 'DGRH-001',
-    nivel_jerarquico: 2,
-    id_ua_superior: 'mock-ua-1',
-    direccion: 'Av. Principal 123, Piso 2',
-    telefono: '55-1234-5678',
-    extension: '2001',
-    estatus: true,
-    fecha_creacion: new Date().toISOString(),
-  },
-  {
-    id_ua: 'mock-ua-3',
-    nombre_ua: 'Direccion General de Finanzas',
-    codigo_ua: 'DGF-001',
-    nivel_jerarquico: 2,
-    id_ua_superior: 'mock-ua-1',
-    direccion: 'Av. Principal 123, Piso 3',
-    telefono: '55-1234-5678',
-    extension: '3001',
-    estatus: true,
-    fecha_creacion: new Date().toISOString(),
-  },
-  {
-    id_ua: 'mock-ua-4',
-    nombre_ua: 'Direccion de Nominas',
-    codigo_ua: 'DN-001',
-    nivel_jerarquico: 3,
-    id_ua_superior: 'mock-ua-2',
-    direccion: 'Av. Principal 123, Piso 2',
-    telefono: '55-1234-5678',
-    extension: '2101',
-    estatus: true,
-    fecha_creacion: new Date().toISOString(),
-  },
-  {
-    id_ua: 'mock-ua-5',
-    nombre_ua: 'Direccion de Capacitacion',
-    codigo_ua: 'DC-001',
-    nivel_jerarquico: 3,
-    id_ua_superior: 'mock-ua-2',
-    direccion: 'Av. Principal 123, Piso 2',
-    telefono: '55-1234-5678',
-    extension: '2102',
-    estatus: false,
-    fecha_creacion: new Date().toISOString(),
-  },
 ];
 
 export default function UnidadesAdminPage() {
@@ -123,9 +60,10 @@ export default function UnidadesAdminPage() {
   const fetchUnidades = async () => {
     setLoading(true);
 
-    // En modo desarrollo, usar datos mock
+    // En modo desarrollo, usar devStorage
     if (isDevMode || DEV_MODE) {
-      setUnidades(MOCK_UNIDADES);
+      const data = devUnidades.getAll();
+      setUnidades(data);
       setLoading(false);
       return;
     }
@@ -176,14 +114,6 @@ export default function UnidadesAdminPage() {
       return;
     }
 
-    // En modo desarrollo, simular guardado
-    if (isDevMode || DEV_MODE) {
-      await new Promise(resolve => setTimeout(resolve, 500));
-      toast.success(editingUA ? 'Unidad actualizada (modo desarrollo)' : 'Unidad creada (modo desarrollo)');
-      onClose();
-      return;
-    }
-
     const payload = {
       nombre_ua: formData.nombre_ua,
       codigo_ua: formData.codigo_ua || null,
@@ -192,7 +122,22 @@ export default function UnidadesAdminPage() {
       direccion: formData.direccion || null,
       telefono: formData.telefono || null,
       extension: formData.extension || null,
+      estatus: true,
     };
+
+    // En modo desarrollo, usar devStorage
+    if (isDevMode || DEV_MODE) {
+      if (editingUA) {
+        devUnidades.update(editingUA.id_ua, payload);
+        toast.success('Unidad actualizada correctamente');
+      } else {
+        devUnidades.create(payload);
+        toast.success('Unidad creada correctamente');
+      }
+      fetchUnidades();
+      onClose();
+      return;
+    }
 
     if (editingUA) {
       const { error } = await supabase
@@ -223,13 +168,15 @@ export default function UnidadesAdminPage() {
   };
 
   const handleDelete = async (id: string, nombre: string) => {
-    // En modo desarrollo, simular eliminacion
+    if (!confirm('Estas seguro de eliminar esta unidad?')) return;
+
+    // En modo desarrollo, usar devStorage
     if (isDevMode || DEV_MODE) {
-      toast.success(`"${nombre}" desactivada (modo desarrollo)`);
+      devUnidades.delete(id);
+      toast.success(`"${nombre}" desactivada correctamente`);
+      fetchUnidades();
       return;
     }
-
-    if (!confirm('Estas seguro de eliminar esta unidad?')) return;
 
     const { error } = await supabase
       .from('cat_unidad_administrativa')
@@ -457,7 +404,7 @@ export default function UnidadesAdminPage() {
       {/* Info de modo desarrollo */}
       {(isDevMode || DEV_MODE) && (
         <p className="text-xs text-center text-gray-400">
-          Modo desarrollo - Mostrando {filteredUnidades.length} unidades de ejemplo
+          Modo desarrollo - {filteredUnidades.length} unidades (datos persistidos en localStorage)
         </p>
       )}
     </div>

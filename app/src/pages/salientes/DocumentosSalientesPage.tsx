@@ -19,88 +19,10 @@ import {
 } from '@nextui-org/react';
 import { Plus, Search, Eye, FolderOpen, Printer, RefreshCw, Filter } from 'lucide-react';
 import { supabase, DEV_MODE } from '../../lib/supabase';
+import { devDocumentosSalientes } from '../../lib/devStorage';
 import { useAuth } from '../../contexts/AuthContext';
 import type { DocumentoSaliente } from '../../types/database';
 import { toast } from 'sonner';
-
-// Datos mock para modo desarrollo
-const MOCK_DOCUMENTOS: DocumentoSaliente[] = [
-  {
-    id_doc_saliente: 'mock-sal-1',
-    numero_folio: 'OF-2025-0089',
-    tipo_doc: 'Oficio',
-    fecha_elaboracion: new Date().toISOString(),
-    asunto: 'Solicitud de recursos para programa de capacitacion del personal administrativo',
-    destinatario_nombre: 'Lic. Roberto Mendoza Garcia',
-    destinatario_cargo: 'Director de Recursos Humanos',
-    destinatario_institucion: 'Secretaria de Finanzas',
-    contenido_cuerpo: null,
-    estatus_saliente: 'Enviado',
-    id_ua_emisora: 'ua1',
-    id_usuario_elabora: 'u1',
-    fecha_creacion: new Date().toISOString(),
-  },
-  {
-    id_doc_saliente: 'mock-sal-2',
-    numero_folio: 'OF-2025-0088',
-    tipo_doc: 'Oficio',
-    fecha_elaboracion: new Date(Date.now() - 86400000).toISOString(),
-    asunto: 'Respuesta a oficio numero 456/2025 sobre revision de expedientes',
-    destinatario_nombre: 'Ing. Patricia Sanchez',
-    destinatario_cargo: 'Coordinadora de Proyectos',
-    destinatario_institucion: 'Secretaria de Obras',
-    contenido_cuerpo: null,
-    estatus_saliente: 'Firmado',
-    id_ua_emisora: 'ua1',
-    id_usuario_elabora: 'u1',
-    fecha_creacion: new Date().toISOString(),
-  },
-  {
-    id_doc_saliente: 'mock-sal-3',
-    numero_folio: 'NI-2025-0023',
-    tipo_doc: 'Nota_Informativa',
-    fecha_elaboracion: new Date(Date.now() - 172800000).toISOString(),
-    asunto: 'Informe de actividades del primer trimestre 2025',
-    destinatario_nombre: 'C.P. Maria Elena Torres',
-    destinatario_cargo: 'Directora General',
-    destinatario_institucion: 'Direccion General de Administracion',
-    contenido_cuerpo: null,
-    estatus_saliente: 'Enviado',
-    id_ua_emisora: 'ua1',
-    id_usuario_elabora: 'u1',
-    fecha_creacion: new Date().toISOString(),
-  },
-  {
-    id_doc_saliente: 'mock-sal-4',
-    numero_folio: 'CIR-2025-0012',
-    tipo_doc: 'Circular',
-    fecha_elaboracion: new Date(Date.now() - 259200000).toISOString(),
-    asunto: 'Lineamientos para el uso eficiente de recursos materiales',
-    destinatario_nombre: 'Personal de la Unidad',
-    destinatario_cargo: null,
-    destinatario_institucion: 'Direccion General',
-    contenido_cuerpo: null,
-    estatus_saliente: 'Borrador',
-    id_ua_emisora: 'ua1',
-    id_usuario_elabora: 'u1',
-    fecha_creacion: new Date().toISOString(),
-  },
-  {
-    id_doc_saliente: 'mock-sal-5',
-    numero_folio: 'MEM-2025-0045',
-    tipo_doc: 'Memorandum',
-    fecha_elaboracion: new Date(Date.now() - 345600000).toISOString(),
-    asunto: 'Recordatorio de entrega de informes mensuales',
-    destinatario_nombre: 'Jefes de Departamento',
-    destinatario_cargo: null,
-    destinatario_institucion: 'Areas adscritas',
-    contenido_cuerpo: null,
-    estatus_saliente: 'Cancelado',
-    id_ua_emisora: 'ua1',
-    id_usuario_elabora: 'u1',
-    fecha_creacion: new Date().toISOString(),
-  },
-];
 
 export default function DocumentosSalientesPage() {
   const navigate = useNavigate();
@@ -120,14 +42,14 @@ export default function DocumentosSalientesPage() {
   const fetchDocumentos = async () => {
     setLoading(true);
 
-    // En modo desarrollo, usar datos mock
+    // En modo desarrollo, usar devStorage
     if (isDevMode || DEV_MODE) {
-      let filtered = [...MOCK_DOCUMENTOS];
+      let allDocs = devDocumentosSalientes.getAll();
       if (filtroEstatus !== 'todos') {
-        filtered = filtered.filter(d => d.estatus_saliente === filtroEstatus);
+        allDocs = allDocs.filter(d => d.estatus_saliente === filtroEstatus);
       }
-      setDocumentos(filtered);
-      setTotal(filtered.length);
+      setDocumentos(allDocs);
+      setTotal(allDocs.length);
       setLoading(false);
       return;
     }
@@ -183,11 +105,7 @@ export default function DocumentosSalientesPage() {
   };
 
   const handleVerDetalle = (id: string) => {
-    if (isDevMode || DEV_MODE) {
-      toast.info('Vista de detalle (modo desarrollo)');
-    } else {
-      navigate(`/salientes/${id}`);
-    }
+    navigate(`/salientes/${id}`);
   };
 
   const handleImprimir = (folio: string) => {

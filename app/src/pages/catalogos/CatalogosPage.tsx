@@ -26,6 +26,7 @@ import {
 import { Plus, Search, Edit, Trash2, ListTree, RefreshCw } from 'lucide-react';
 import { supabase, DEV_MODE } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
+import { devCatalogos } from '../../lib/devStorage';
 import { toast } from 'sonner';
 import type { ValorCatalogo } from '../../types/database';
 
@@ -37,36 +38,6 @@ const tiposCatalogo = [
   { key: 'Categoria_Inventario', label: 'Categoria de Inventario' },
 ];
 
-// Datos mock para modo desarrollo
-const MOCK_VALORES: Record<string, ValorCatalogo[]> = {
-  Prioridad: [
-    { id_valor_catalogo: 'mock-val-1', tipo_catalogo: 'Prioridad', valor: 'Urgente', descripcion: 'Atencion inmediata', es_modificable: false, orden_presentacion: 1, estatus: true, fecha_creacion: '' },
-    { id_valor_catalogo: 'mock-val-2', tipo_catalogo: 'Prioridad', valor: 'Normal', descripcion: 'Atencion regular', es_modificable: false, orden_presentacion: 2, estatus: true, fecha_creacion: '' },
-    { id_valor_catalogo: 'mock-val-3', tipo_catalogo: 'Prioridad', valor: 'Baja', descripcion: 'Sin urgencia', es_modificable: true, orden_presentacion: 3, estatus: true, fecha_creacion: '' },
-  ],
-  Tipo_Documento: [
-    { id_valor_catalogo: 'mock-val-4', tipo_catalogo: 'Tipo_Documento', valor: 'Oficio', descripcion: 'Documento oficial', es_modificable: false, orden_presentacion: 1, estatus: true, fecha_creacion: '' },
-    { id_valor_catalogo: 'mock-val-5', tipo_catalogo: 'Tipo_Documento', valor: 'Circular', descripcion: 'Comunicado general', es_modificable: false, orden_presentacion: 2, estatus: true, fecha_creacion: '' },
-    { id_valor_catalogo: 'mock-val-6', tipo_catalogo: 'Tipo_Documento', valor: 'Memorandum', descripcion: 'Comunicacion interna', es_modificable: true, orden_presentacion: 3, estatus: true, fecha_creacion: '' },
-    { id_valor_catalogo: 'mock-val-7', tipo_catalogo: 'Tipo_Documento', valor: 'Nota Informativa', descripcion: 'Informacion general', es_modificable: true, orden_presentacion: 4, estatus: true, fecha_creacion: '' },
-  ],
-  Area_Remitente: [
-    { id_valor_catalogo: 'mock-val-8', tipo_catalogo: 'Area_Remitente', valor: 'Gobierno Federal', descripcion: null, es_modificable: true, orden_presentacion: 1, estatus: true, fecha_creacion: '' },
-    { id_valor_catalogo: 'mock-val-9', tipo_catalogo: 'Area_Remitente', valor: 'Gobierno Estatal', descripcion: null, es_modificable: true, orden_presentacion: 2, estatus: true, fecha_creacion: '' },
-    { id_valor_catalogo: 'mock-val-10', tipo_catalogo: 'Area_Remitente', valor: 'Particular', descripcion: null, es_modificable: true, orden_presentacion: 3, estatus: true, fecha_creacion: '' },
-  ],
-  Instruccion: [
-    { id_valor_catalogo: 'mock-val-11', tipo_catalogo: 'Instruccion', valor: 'Para su atencion', descripcion: null, es_modificable: false, orden_presentacion: 1, estatus: true, fecha_creacion: '' },
-    { id_valor_catalogo: 'mock-val-12', tipo_catalogo: 'Instruccion', valor: 'Para su conocimiento', descripcion: null, es_modificable: false, orden_presentacion: 2, estatus: true, fecha_creacion: '' },
-    { id_valor_catalogo: 'mock-val-13', tipo_catalogo: 'Instruccion', valor: 'Para su seguimiento', descripcion: null, es_modificable: true, orden_presentacion: 3, estatus: true, fecha_creacion: '' },
-  ],
-  Categoria_Inventario: [
-    { id_valor_catalogo: 'mock-val-14', tipo_catalogo: 'Categoria_Inventario', valor: 'Mobiliario', descripcion: null, es_modificable: true, orden_presentacion: 1, estatus: true, fecha_creacion: '' },
-    { id_valor_catalogo: 'mock-val-15', tipo_catalogo: 'Categoria_Inventario', valor: 'Equipo de Computo', descripcion: null, es_modificable: true, orden_presentacion: 2, estatus: true, fecha_creacion: '' },
-    { id_valor_catalogo: 'mock-val-16', tipo_catalogo: 'Categoria_Inventario', valor: 'Vehiculos', descripcion: null, es_modificable: true, orden_presentacion: 3, estatus: true, fecha_creacion: '' },
-  ],
-};
-
 export default function CatalogosPage() {
   const { isDevMode } = useAuth();
   const [valores, setValores] = useState<ValorCatalogo[]>([]);
@@ -74,6 +45,7 @@ export default function CatalogosPage() {
   const [search, setSearch] = useState('');
   const [tipoSeleccionado, setTipoSeleccionado] = useState('Prioridad');
   const [editingValor, setEditingValor] = useState<ValorCatalogo | null>(null);
+  const [saving, setSaving] = useState(false);
   const { isOpen, onOpen, onClose } = useDisclosure();
 
   const [formData, setFormData] = useState({
@@ -81,6 +53,7 @@ export default function CatalogosPage() {
     valor: '',
     descripcion: '',
     orden_presentacion: '0',
+    es_modificable: true,
   });
 
   useEffect(() => {
@@ -90,9 +63,10 @@ export default function CatalogosPage() {
   const fetchValores = async () => {
     setLoading(true);
 
-    // En modo desarrollo, usar datos mock
+    // En modo desarrollo, usar devStorage
     if (isDevMode || DEV_MODE) {
-      setValores(MOCK_VALORES[tipoSeleccionado] || []);
+      const data = devCatalogos.getByTipo(tipoSeleccionado);
+      setValores(data);
       setLoading(false);
       return;
     }
@@ -101,6 +75,7 @@ export default function CatalogosPage() {
       .from('cat_valores_catalogo')
       .select('*')
       .eq('tipo_catalogo', tipoSeleccionado)
+      .eq('estatus', true)
       .order('orden_presentacion');
 
     if (error) {
@@ -119,6 +94,7 @@ export default function CatalogosPage() {
         valor: valor.valor,
         descripcion: valor.descripcion || '',
         orden_presentacion: String(valor.orden_presentacion),
+        es_modificable: valor.es_modificable,
       });
     } else {
       setEditingValor(null);
@@ -126,30 +102,59 @@ export default function CatalogosPage() {
         tipo_catalogo: tipoSeleccionado,
         valor: '',
         descripcion: '',
-        orden_presentacion: '0',
+        orden_presentacion: String(valores.length + 1),
+        es_modificable: true,
       });
     }
     onOpen();
   };
 
   const handleSubmit = async () => {
-    if (!formData.valor) {
+    if (!formData.valor.trim()) {
       toast.error('El valor es requerido');
       return;
     }
 
-    // En modo desarrollo, simular guardado
+    setSaving(true);
+
+    // En modo desarrollo, usar devStorage con persistencia real
     if (isDevMode || DEV_MODE) {
-      await new Promise(resolve => setTimeout(resolve, 500));
-      toast.success(editingValor ? 'Valor actualizado (modo desarrollo)' : 'Valor creado (modo desarrollo)');
-      onClose();
+      try {
+        if (editingValor) {
+          const updated = devCatalogos.update(editingValor.id_valor_catalogo, {
+            valor: formData.valor.trim(),
+            descripcion: formData.descripcion.trim() || null,
+            orden_presentacion: parseInt(formData.orden_presentacion) || 0,
+          });
+          if (updated) {
+            toast.success('Valor actualizado correctamente');
+          } else {
+            toast.error('Error al actualizar');
+          }
+        } else {
+          devCatalogos.create({
+            tipo_catalogo: formData.tipo_catalogo,
+            valor: formData.valor.trim(),
+            descripcion: formData.descripcion.trim() || null,
+            orden_presentacion: parseInt(formData.orden_presentacion) || 0,
+            es_modificable: formData.es_modificable,
+            estatus: true,
+          });
+          toast.success('Valor creado correctamente');
+        }
+        fetchValores();
+        onClose();
+      } catch {
+        toast.error('Error al guardar');
+      }
+      setSaving(false);
       return;
     }
 
     const payload = {
       tipo_catalogo: formData.tipo_catalogo,
-      valor: formData.valor,
-      descripcion: formData.descripcion || null,
+      valor: formData.valor.trim(),
+      descripcion: formData.descripcion.trim() || null,
       orden_presentacion: parseInt(formData.orden_presentacion) || 0,
     };
 
@@ -177,21 +182,28 @@ export default function CatalogosPage() {
         onClose();
       }
     }
+    setSaving(false);
   };
 
   const handleDelete = async (id: string, esModificable: boolean, valor: string) => {
     if (!esModificable) {
-      toast.error('Este valor no puede ser eliminado');
+      toast.error('Este valor no puede ser eliminado porque es del sistema');
       return;
     }
 
-    // En modo desarrollo, simular eliminacion
+    if (!confirm(`¿Desea desactivar el valor "${valor}"?`)) return;
+
+    // En modo desarrollo, usar devStorage
     if (isDevMode || DEV_MODE) {
-      toast.success(`"${valor}" desactivado (modo desarrollo)`);
+      const deleted = devCatalogos.delete(id);
+      if (deleted) {
+        toast.success(`"${valor}" desactivado correctamente`);
+        fetchValores();
+      } else {
+        toast.error('Error al desactivar');
+      }
       return;
     }
-
-    if (!confirm('Eliminar este valor?')) return;
 
     const { error } = await supabase
       .from('cat_valores_catalogo')
@@ -207,7 +219,8 @@ export default function CatalogosPage() {
   };
 
   const filteredValores = valores.filter((v) =>
-    v.valor.toLowerCase().includes(search.toLowerCase())
+    v.valor.toLowerCase().includes(search.toLowerCase()) ||
+    v.descripcion?.toLowerCase().includes(search.toLowerCase())
   );
 
   return (
@@ -269,6 +282,8 @@ export default function CatalogosPage() {
             onValueChange={setSearch}
             startContent={<Search size={18} className="text-gray-400" />}
             size="sm"
+            isClearable
+            onClear={() => setSearch('')}
           />
         </CardBody>
       </Card>
@@ -284,7 +299,7 @@ export default function CatalogosPage() {
             <TableColumn className="text-xs">ESTATUS</TableColumn>
             <TableColumn className="text-xs">ACCIONES</TableColumn>
           </TableHeader>
-          <TableBody items={filteredValores} isLoading={loading} emptyContent="Sin valores">
+          <TableBody items={filteredValores} isLoading={loading} emptyContent="Sin valores en este catalogo">
             {(valor) => (
               <TableRow key={valor.id_valor_catalogo} className="hover:bg-gray-50">
                 <TableCell>
@@ -313,7 +328,7 @@ export default function CatalogosPage() {
                 </TableCell>
                 <TableCell>
                   <div className="flex gap-1">
-                    <Tooltip content="Editar">
+                    <Tooltip content={valor.es_modificable ? 'Editar' : 'No editable'}>
                       <Button
                         isIconOnly
                         size="sm"
@@ -324,7 +339,7 @@ export default function CatalogosPage() {
                         <Edit size={16} style={{ color: valor.es_modificable ? 'var(--theme-primary-600)' : '#ccc' }} />
                       </Button>
                     </Tooltip>
-                    <Tooltip content="Eliminar">
+                    <Tooltip content={valor.es_modificable ? 'Eliminar' : 'No eliminable'}>
                       <Button
                         isIconOnly
                         size="sm"
@@ -386,6 +401,7 @@ export default function CatalogosPage() {
                 value={formData.orden_presentacion}
                 onValueChange={(v) => setFormData({ ...formData, orden_presentacion: v })}
                 size="sm"
+                min={0}
               />
             </div>
           </ModalBody>
@@ -396,6 +412,7 @@ export default function CatalogosPage() {
             <Button
               color="primary"
               onPress={handleSubmit}
+              isLoading={saving}
               style={{ backgroundColor: 'var(--theme-primary-700)' }}
             >
               {editingValor ? 'Actualizar' : 'Crear'}
@@ -407,7 +424,7 @@ export default function CatalogosPage() {
       {/* Info de modo desarrollo */}
       {(isDevMode || DEV_MODE) && (
         <p className="text-xs text-center text-gray-400">
-          Modo desarrollo - Mostrando {filteredValores.length} valores de ejemplo
+          Modo desarrollo - Los datos se guardan localmente ({filteredValores.length} valores)
         </p>
       )}
     </div>

@@ -22,6 +22,7 @@ import TurnadoPage from './pages/turnado/TurnadoPage';
 import BandejaTurnadosPage from './pages/turnado/BandejaTurnadosPage';
 import DocumentosSalientesPage from './pages/salientes/DocumentosSalientesPage';
 import NuevoSalientePage from './pages/salientes/NuevoSalientePage';
+import DetalleDocumentoSalientePage from './pages/salientes/DetalleDocumentoSalientePage';
 import InventarioPage from './pages/inventario/InventarioPage';
 import BusquedaPage from './pages/reportes/BusquedaPage';
 
@@ -159,6 +160,7 @@ function App() {
         <Route path="salientes">
           <Route index element={<DocumentosSalientesPage />} />
           <Route path="nuevo" element={<NuevoSalientePage />} />
+          <Route path=":id" element={<DetalleDocumentoSalientePage />} />
         </Route>
 
         {/* Inventario */}
