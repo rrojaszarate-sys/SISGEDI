@@ -20,18 +20,20 @@ import {
   Tooltip,
   Pagination,
   Textarea,
+  Card,
+  CardBody,
 } from '@nextui-org/react';
-import { Plus, Search, Edit, Package, Trash2 } from 'lucide-react';
-import { supabase } from '../../lib/supabase';
+import { Plus, Search, Edit, Package, Trash2, RefreshCw, Filter } from 'lucide-react';
+import { supabase, DEV_MODE } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import { toast } from 'sonner';
 import type { Inventario } from '../../types/database';
 
 const categorias = [
   'Mobiliario',
-  'Equipo de Cómputo',
+  'Equipo de Computo',
   'Equipo de Oficina',
-  'Vehículos',
+  'Vehiculos',
   'Herramientas',
   'Material de Oficina',
   'Otros',
@@ -44,11 +46,136 @@ const estados = [
   { key: 'Baja', label: 'Baja', color: 'default' },
 ];
 
+// Datos mock para modo desarrollo
+const MOCK_INVENTARIO: Inventario[] = [
+  {
+    id_inventario: 'mock-inv-1',
+    id_ua: 'ua1',
+    categoria: 'Equipo de Computo',
+    descripcion: 'Laptop HP ProBook 450 G8 - Intel Core i7',
+    cantidad: 1,
+    unidad: 'Pieza',
+    estado: 'Bueno',
+    ubicacion: 'Oficina 201, Edificio Principal',
+    responsable: 'Lic. Maria Garcia Lopez',
+    numero_inventario: 'INV-2025-0001',
+    fecha_adquisicion: '2024-01-15',
+    valor_unitario: 25000,
+    valor_total: 25000,
+    proveedor: 'HP Mexico',
+    marca: 'HP',
+    modelo: 'ProBook 450 G8',
+    serie: 'ABC123456',
+    fecha_registro: new Date().toISOString(),
+  },
+  {
+    id_inventario: 'mock-inv-2',
+    id_ua: 'ua1',
+    categoria: 'Mobiliario',
+    descripcion: 'Escritorio ejecutivo de madera con cajones',
+    cantidad: 1,
+    unidad: 'Pieza',
+    estado: 'Bueno',
+    ubicacion: 'Oficina 201, Edificio Principal',
+    responsable: 'Lic. Maria Garcia Lopez',
+    numero_inventario: 'INV-2025-0002',
+    fecha_adquisicion: '2023-06-20',
+    valor_unitario: 8500,
+    valor_total: 8500,
+    proveedor: 'Muebles Oficina SA',
+    marca: 'Office Plus',
+    modelo: 'Ejecutivo E-500',
+    serie: null,
+    fecha_registro: new Date().toISOString(),
+  },
+  {
+    id_inventario: 'mock-inv-3',
+    id_ua: 'ua1',
+    categoria: 'Equipo de Oficina',
+    descripcion: 'Impresora multifuncional a color',
+    cantidad: 1,
+    unidad: 'Pieza',
+    estado: 'Regular',
+    ubicacion: 'Area de copiado, Planta Baja',
+    responsable: 'Ing. Roberto Martinez',
+    numero_inventario: 'INV-2024-0089',
+    fecha_adquisicion: '2022-03-10',
+    valor_unitario: 15000,
+    valor_total: 15000,
+    proveedor: 'Epson Mexico',
+    marca: 'Epson',
+    modelo: 'EcoTank L6270',
+    serie: 'XYZ789012',
+    fecha_registro: new Date().toISOString(),
+  },
+  {
+    id_inventario: 'mock-inv-4',
+    id_ua: 'ua1',
+    categoria: 'Mobiliario',
+    descripcion: 'Sillas ejecutivas ergonomicas',
+    cantidad: 10,
+    unidad: 'Pieza',
+    estado: 'Bueno',
+    ubicacion: 'Sala de juntas, Piso 2',
+    responsable: 'C.P. Ana Hernandez',
+    numero_inventario: 'INV-2024-0056',
+    fecha_adquisicion: '2023-09-05',
+    valor_unitario: 3500,
+    valor_total: 35000,
+    proveedor: 'Muebles Oficina SA',
+    marca: 'ErgoMax',
+    modelo: 'Comfort Pro',
+    serie: null,
+    fecha_registro: new Date().toISOString(),
+  },
+  {
+    id_inventario: 'mock-inv-5',
+    id_ua: 'ua1',
+    categoria: 'Vehiculos',
+    descripcion: 'Vehiculo oficial Nissan Sentra 2023',
+    cantidad: 1,
+    unidad: 'Pieza',
+    estado: 'Bueno',
+    ubicacion: 'Estacionamiento oficial',
+    responsable: 'Lic. Carlos Ruiz',
+    numero_inventario: 'INV-2023-0123',
+    fecha_adquisicion: '2023-01-20',
+    valor_unitario: 350000,
+    valor_total: 350000,
+    proveedor: 'Nissan Automotriz',
+    marca: 'Nissan',
+    modelo: 'Sentra 2023',
+    serie: 'VIN123456789',
+    fecha_registro: new Date().toISOString(),
+  },
+  {
+    id_inventario: 'mock-inv-6',
+    id_ua: 'ua1',
+    categoria: 'Equipo de Computo',
+    descripcion: 'Monitor LED 27 pulgadas',
+    cantidad: 5,
+    unidad: 'Pieza',
+    estado: 'Malo',
+    ubicacion: 'Almacen general',
+    responsable: 'Ing. Roberto Martinez',
+    numero_inventario: 'INV-2022-0045',
+    fecha_adquisicion: '2020-11-15',
+    valor_unitario: 4500,
+    valor_total: 22500,
+    proveedor: 'Dell Mexico',
+    marca: 'Dell',
+    modelo: 'P2719H',
+    serie: null,
+    fecha_registro: new Date().toISOString(),
+  },
+];
+
 export default function InventarioPage() {
-  const { usuario } = useAuth();
+  const { usuario, isDevMode } = useAuth();
   const [inventario, setInventario] = useState<Inventario[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
+  const [filtroCategoria, setFiltroCategoria] = useState('todas');
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
   const [editingItem, setEditingItem] = useState<Inventario | null>(null);
@@ -74,20 +201,41 @@ export default function InventarioPage() {
 
   useEffect(() => {
     fetchInventario();
-  }, [page]);
+  }, [page, filtroCategoria]);
 
   const fetchInventario = async () => {
     setLoading(true);
 
-    const { data, count } = await supabase
+    // En modo desarrollo, usar datos mock
+    if (isDevMode || DEV_MODE) {
+      let filtered = [...MOCK_INVENTARIO];
+      if (filtroCategoria !== 'todas') {
+        filtered = filtered.filter(i => i.categoria === filtroCategoria);
+      }
+      setInventario(filtered);
+      setTotal(filtered.length);
+      setLoading(false);
+      return;
+    }
+
+    // Produccion
+    let query = supabase
       .from('tbl_inventario')
       .select('*', { count: 'exact' })
-      .eq('id_ua', usuario?.id_ua)
+      .eq('id_ua', usuario?.unidad_administrativa?.id_ua)
       .order('fecha_registro', { ascending: false })
       .range((page - 1) * itemsPerPage, page * itemsPerPage - 1);
 
-    setInventario(data || []);
-    setTotal(count || 0);
+    if (filtroCategoria !== 'todas') {
+      query = query.eq('categoria', filtroCategoria);
+    }
+
+    const { data, count, error } = await query;
+
+    if (!error) {
+      setInventario(data || []);
+      setTotal(count || 0);
+    }
     setLoading(false);
   };
 
@@ -138,8 +286,16 @@ export default function InventarioPage() {
       return;
     }
 
+    // En modo desarrollo, simular guardado
+    if (isDevMode || DEV_MODE) {
+      await new Promise(resolve => setTimeout(resolve, 500));
+      toast.success(editingItem ? 'Articulo actualizado (modo desarrollo)' : 'Articulo registrado (modo desarrollo)');
+      onClose();
+      return;
+    }
+
     const payload = {
-      id_ua: usuario?.id_ua,
+      id_ua: usuario?.unidad_administrativa?.id_ua,
       categoria: formData.categoria,
       descripcion: formData.descripcion,
       cantidad: parseInt(formData.cantidad) || 1,
@@ -165,7 +321,7 @@ export default function InventarioPage() {
       if (error) {
         toast.error('Error al actualizar');
       } else {
-        toast.success('Artículo actualizado');
+        toast.success('Articulo actualizado');
         fetchInventario();
         onClose();
       }
@@ -173,24 +329,30 @@ export default function InventarioPage() {
       const { error } = await supabase.from('tbl_inventario').insert(payload);
 
       if (error) {
-        toast.error('Error al crear artículo');
+        toast.error('Error al crear articulo');
       } else {
-        toast.success('Artículo registrado');
+        toast.success('Articulo registrado');
         fetchInventario();
         onClose();
       }
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('¿Eliminar este artículo?')) return;
+  const handleDelete = async (id: string, descripcion: string) => {
+    // En modo desarrollo, simular eliminacion
+    if (isDevMode || DEV_MODE) {
+      toast.success(`"${descripcion}" eliminado (modo desarrollo)`);
+      return;
+    }
+
+    if (!confirm('Eliminar este articulo?')) return;
 
     const { error } = await supabase.from('tbl_inventario').delete().eq('id_inventario', id);
 
     if (error) {
       toast.error('Error al eliminar');
     } else {
-      toast.success('Artículo eliminado');
+      toast.success('Articulo eliminado');
       fetchInventario();
     }
   };
@@ -215,142 +377,206 @@ export default function InventarioPage() {
   );
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Header */}
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-2xl font-bold flex items-center gap-2">
-            <Package className="text-primary" />
+          <h1
+            className="text-xl sm:text-2xl font-bold flex items-center gap-2"
+            style={{ color: 'var(--theme-primary-800)' }}
+          >
+            <Package style={{ color: 'var(--theme-primary-600)' }} />
             Inventario
           </h1>
-          <p className="text-gray-500">Gestión de bienes y activos</p>
+          <p className="text-sm text-gray-500">Gestion de bienes y activos</p>
         </div>
-        <Button color="primary" startContent={<Plus size={18} />} onPress={() => handleOpenModal()}>
-          Nuevo Artículo
-        </Button>
+        <div className="flex gap-2">
+          <Button
+            isIconOnly
+            variant="flat"
+            onPress={fetchInventario}
+            isLoading={loading}
+          >
+            <RefreshCw size={18} />
+          </Button>
+          <Button
+            color="primary"
+            startContent={<Plus size={18} />}
+            style={{ backgroundColor: 'var(--theme-primary-700)' }}
+            onPress={() => handleOpenModal()}
+          >
+            <span className="hidden sm:inline">Nuevo Articulo</span>
+            <span className="sm:hidden">Nuevo</span>
+          </Button>
+        </div>
       </div>
 
-      {/* Búsqueda */}
-      <Input
-        placeholder="Buscar por descripción, número o categoría..."
-        value={search}
-        onValueChange={setSearch}
-        startContent={<Search size={18} className="text-gray-400" />}
-        className="max-w-md"
-      />
+      {/* Filtros */}
+      <Card className="shadow-sm">
+        <CardBody className="p-3 sm:p-4">
+          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
+            <Input
+              placeholder="Buscar por descripcion, numero o categoria..."
+              value={search}
+              onValueChange={setSearch}
+              startContent={<Search size={18} className="text-gray-400" />}
+              className="flex-1"
+              size="sm"
+            />
+            <Select
+              placeholder="Categoria"
+              selectedKeys={[filtroCategoria]}
+              onSelectionChange={(keys) => setFiltroCategoria(Array.from(keys)[0] as string)}
+              startContent={<Filter size={16} />}
+              className="w-full sm:w-48"
+              size="sm"
+            >
+              {['todas', ...categorias].map((cat) => (
+                <SelectItem key={cat}>{cat === 'todas' ? 'Todas' : cat}</SelectItem>
+              ))}
+            </Select>
+          </div>
+        </CardBody>
+      </Card>
 
       {/* Tabla */}
-      <Table
-        aria-label="Inventario"
-        bottomContent={
-          total > itemsPerPage && (
-            <div className="flex justify-center">
-              <Pagination
-                total={Math.ceil(total / itemsPerPage)}
-                page={page}
-                onChange={setPage}
-              />
-            </div>
-          )
-        }
-      >
-        <TableHeader>
-          <TableColumn>NO. INVENTARIO</TableColumn>
-          <TableColumn>DESCRIPCIÓN</TableColumn>
-          <TableColumn>CATEGORÍA</TableColumn>
-          <TableColumn>CANTIDAD</TableColumn>
-          <TableColumn>ESTADO</TableColumn>
-          <TableColumn>VALOR</TableColumn>
-          <TableColumn>ACCIONES</TableColumn>
-        </TableHeader>
-        <TableBody items={filteredItems} isLoading={loading} emptyContent="Sin artículos">
-          {(item) => (
-            <TableRow key={item.id_inventario}>
-              <TableCell className="font-mono text-sm">{item.numero_inventario}</TableCell>
-              <TableCell className="max-w-xs">
-                <p className="truncate">{item.descripcion}</p>
-                {item.marca && (
-                  <p className="text-xs text-gray-500">
-                    {item.marca} {item.modelo}
-                  </p>
-                )}
-              </TableCell>
-              <TableCell>
-                <Chip size="sm" variant="flat">
-                  {item.categoria}
-                </Chip>
-              </TableCell>
-              <TableCell>
-                {item.cantidad} {item.unidad}
-              </TableCell>
-              <TableCell>
-                <Chip size="sm" color={getEstadoColor(item.estado)}>
-                  {item.estado}
-                </Chip>
-              </TableCell>
-              <TableCell>{formatCurrency(item.valor_total)}</TableCell>
-              <TableCell>
-                <div className="flex gap-2">
-                  <Tooltip content="Editar">
-                    <Button
-                      isIconOnly
-                      size="sm"
-                      variant="light"
-                      onPress={() => handleOpenModal(item)}
-                    >
-                      <Edit size={16} />
-                    </Button>
-                  </Tooltip>
-                  <Tooltip content="Eliminar">
-                    <Button
-                      isIconOnly
-                      size="sm"
-                      variant="light"
-                      color="danger"
-                      onPress={() => handleDelete(item.id_inventario)}
-                    >
-                      <Trash2 size={16} />
-                    </Button>
-                  </Tooltip>
-                </div>
-              </TableCell>
-            </TableRow>
-          )}
-        </TableBody>
-      </Table>
+      <Card className="shadow-sm overflow-hidden">
+        <Table
+          aria-label="Inventario"
+          removeWrapper
+          bottomContent={
+            total > itemsPerPage && (
+              <div className="flex justify-center py-2">
+                <Pagination
+                  total={Math.ceil(total / itemsPerPage)}
+                  page={page}
+                  onChange={setPage}
+                  size="sm"
+                />
+              </div>
+            )
+          }
+        >
+          <TableHeader>
+            <TableColumn className="text-xs">NO. INVENTARIO</TableColumn>
+            <TableColumn className="text-xs">DESCRIPCION</TableColumn>
+            <TableColumn className="text-xs hidden md:table-cell">CATEGORIA</TableColumn>
+            <TableColumn className="text-xs hidden sm:table-cell">CANTIDAD</TableColumn>
+            <TableColumn className="text-xs">ESTADO</TableColumn>
+            <TableColumn className="text-xs hidden lg:table-cell">VALOR</TableColumn>
+            <TableColumn className="text-xs">ACCIONES</TableColumn>
+          </TableHeader>
+          <TableBody items={filteredItems} isLoading={loading} emptyContent="Sin articulos">
+            {(item) => (
+              <TableRow key={item.id_inventario} className="hover:bg-gray-50">
+                <TableCell>
+                  <span
+                    className="font-mono text-xs sm:text-sm font-medium"
+                    style={{ color: 'var(--theme-primary-700)' }}
+                  >
+                    {item.numero_inventario}
+                  </span>
+                </TableCell>
+                <TableCell>
+                  <div className="max-w-[150px] sm:max-w-[200px] md:max-w-xs">
+                    <p className="text-xs sm:text-sm truncate" title={item.descripcion}>
+                      {item.descripcion}
+                    </p>
+                    {item.marca && (
+                      <p className="text-[10px] text-gray-500 truncate">
+                        {item.marca} {item.modelo}
+                      </p>
+                    )}
+                  </div>
+                </TableCell>
+                <TableCell className="hidden md:table-cell">
+                  <Chip size="sm" variant="flat">
+                    <span className="text-[10px]">{item.categoria}</span>
+                  </Chip>
+                </TableCell>
+                <TableCell className="hidden sm:table-cell">
+                  <span className="text-xs">
+                    {item.cantidad} {item.unidad}
+                  </span>
+                </TableCell>
+                <TableCell>
+                  <Chip size="sm" color={getEstadoColor(item.estado)} variant="flat">
+                    <span className="text-[10px]">{item.estado}</span>
+                  </Chip>
+                </TableCell>
+                <TableCell className="hidden lg:table-cell">
+                  <span className="text-xs font-medium">
+                    {formatCurrency(item.valor_total)}
+                  </span>
+                </TableCell>
+                <TableCell>
+                  <div className="flex gap-1">
+                    <Tooltip content="Editar">
+                      <Button
+                        isIconOnly
+                        size="sm"
+                        variant="light"
+                        onPress={() => handleOpenModal(item)}
+                      >
+                        <Edit size={16} style={{ color: 'var(--theme-primary-600)' }} />
+                      </Button>
+                    </Tooltip>
+                    <Tooltip content="Eliminar">
+                      <Button
+                        isIconOnly
+                        size="sm"
+                        variant="light"
+                        color="danger"
+                        onPress={() => handleDelete(item.id_inventario, item.descripcion)}
+                      >
+                        <Trash2 size={16} />
+                      </Button>
+                    </Tooltip>
+                  </div>
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+      </Card>
 
       {/* Modal */}
       <Modal isOpen={isOpen} onClose={onClose} size="3xl" scrollBehavior="inside">
         <ModalContent>
-          <ModalHeader>{editingItem ? 'Editar Artículo' : 'Nuevo Artículo'}</ModalHeader>
+          <ModalHeader style={{ color: 'var(--theme-primary-700)' }}>
+            {editingItem ? 'Editar Articulo' : 'Nuevo Articulo'}
+          </ModalHeader>
           <ModalBody>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <Input
-                label="Número de Inventario"
+                label="Numero de Inventario"
                 placeholder="INV-2025-001"
                 value={formData.numero_inventario}
                 onValueChange={(v) => setFormData({ ...formData, numero_inventario: v })}
                 isRequired
+                size="sm"
               />
               <Select
-                label="Categoría"
+                label="Categoria"
                 selectedKeys={formData.categoria ? [formData.categoria] : []}
                 onSelectionChange={(keys) =>
                   setFormData({ ...formData, categoria: Array.from(keys)[0] as string })
                 }
                 isRequired
+                size="sm"
               >
                 {categorias.map((cat) => (
                   <SelectItem key={cat}>{cat}</SelectItem>
                 ))}
               </Select>
               <Textarea
-                label="Descripción"
-                placeholder="Descripción del artículo..."
+                label="Descripcion"
+                placeholder="Descripcion del articulo..."
                 value={formData.descripcion}
                 onValueChange={(v) => setFormData({ ...formData, descripcion: v })}
-                className="col-span-2"
+                className="sm:col-span-2"
                 isRequired
+                size="sm"
               />
               <Input
                 type="number"
@@ -358,12 +584,14 @@ export default function InventarioPage() {
                 value={formData.cantidad}
                 onValueChange={(v) => setFormData({ ...formData, cantidad: v })}
                 min={1}
+                size="sm"
               />
               <Input
                 label="Unidad"
                 placeholder="Pieza, Juego, etc."
                 value={formData.unidad}
                 onValueChange={(v) => setFormData({ ...formData, unidad: v })}
+                size="sm"
               />
               <Select
                 label="Estado"
@@ -371,6 +599,7 @@ export default function InventarioPage() {
                 onSelectionChange={(keys) =>
                   setFormData({ ...formData, estado: Array.from(keys)[0] as string })
                 }
+                size="sm"
               >
                 {estados.map((e) => (
                   <SelectItem key={e.key}>{e.label}</SelectItem>
@@ -378,9 +607,10 @@ export default function InventarioPage() {
               </Select>
               <Input
                 type="date"
-                label="Fecha de Adquisición"
+                label="Fecha de Adquisicion"
                 value={formData.fecha_adquisicion}
                 onValueChange={(v) => setFormData({ ...formData, fecha_adquisicion: v })}
+                size="sm"
               />
               <Input
                 type="number"
@@ -389,39 +619,46 @@ export default function InventarioPage() {
                 value={formData.valor_unitario}
                 onValueChange={(v) => setFormData({ ...formData, valor_unitario: v })}
                 startContent="$"
+                size="sm"
               />
               <Input
-                label="Ubicación"
-                placeholder="Edificio, piso, área..."
+                label="Ubicacion"
+                placeholder="Edificio, piso, area..."
                 value={formData.ubicacion}
                 onValueChange={(v) => setFormData({ ...formData, ubicacion: v })}
+                size="sm"
               />
               <Input
                 label="Responsable"
                 placeholder="Nombre del responsable"
                 value={formData.responsable}
                 onValueChange={(v) => setFormData({ ...formData, responsable: v })}
+                size="sm"
               />
               <Input
                 label="Proveedor"
                 placeholder="Nombre del proveedor"
                 value={formData.proveedor}
                 onValueChange={(v) => setFormData({ ...formData, proveedor: v })}
+                size="sm"
               />
               <Input
                 label="Marca"
                 value={formData.marca}
                 onValueChange={(v) => setFormData({ ...formData, marca: v })}
+                size="sm"
               />
               <Input
                 label="Modelo"
                 value={formData.modelo}
                 onValueChange={(v) => setFormData({ ...formData, modelo: v })}
+                size="sm"
               />
               <Input
                 label="Serie"
                 value={formData.serie}
                 onValueChange={(v) => setFormData({ ...formData, serie: v })}
+                size="sm"
               />
             </div>
           </ModalBody>
@@ -429,12 +666,23 @@ export default function InventarioPage() {
             <Button variant="light" onPress={onClose}>
               Cancelar
             </Button>
-            <Button color="primary" onPress={handleSubmit}>
+            <Button
+              color="primary"
+              onPress={handleSubmit}
+              style={{ backgroundColor: 'var(--theme-primary-700)' }}
+            >
               {editingItem ? 'Actualizar' : 'Crear'}
             </Button>
           </ModalFooter>
         </ModalContent>
       </Modal>
+
+      {/* Info de modo desarrollo */}
+      {(isDevMode || DEV_MODE) && (
+        <p className="text-xs text-center text-gray-400">
+          Modo desarrollo - Mostrando {filteredItems.length} articulos de ejemplo
+        </p>
+      )}
     </div>
   );
 }

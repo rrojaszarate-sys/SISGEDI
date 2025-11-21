@@ -20,21 +20,55 @@ import {
   Tooltip,
   Tabs,
   Tab,
+  Card,
+  CardBody,
 } from '@nextui-org/react';
-import { Plus, Search, Edit, Trash2, ListTree } from 'lucide-react';
-import { supabase } from '../../lib/supabase';
+import { Plus, Search, Edit, Trash2, ListTree, RefreshCw } from 'lucide-react';
+import { supabase, DEV_MODE } from '../../lib/supabase';
+import { useAuth } from '../../contexts/AuthContext';
 import { toast } from 'sonner';
 import type { ValorCatalogo } from '../../types/database';
 
 const tiposCatalogo = [
   { key: 'Prioridad', label: 'Prioridad' },
   { key: 'Tipo_Documento', label: 'Tipo de Documento' },
-  { key: 'Area_Remitente', label: 'Área Remitente' },
-  { key: 'Instruccion', label: 'Instrucción de Turnado' },
-  { key: 'Categoria_Inventario', label: 'Categoría de Inventario' },
+  { key: 'Area_Remitente', label: 'Area Remitente' },
+  { key: 'Instruccion', label: 'Instruccion de Turnado' },
+  { key: 'Categoria_Inventario', label: 'Categoria de Inventario' },
 ];
 
+// Datos mock para modo desarrollo
+const MOCK_VALORES: Record<string, ValorCatalogo[]> = {
+  Prioridad: [
+    { id_valor_catalogo: 'mock-val-1', tipo_catalogo: 'Prioridad', valor: 'Urgente', descripcion: 'Atencion inmediata', es_modificable: false, orden_presentacion: 1, estatus: true, fecha_creacion: '' },
+    { id_valor_catalogo: 'mock-val-2', tipo_catalogo: 'Prioridad', valor: 'Normal', descripcion: 'Atencion regular', es_modificable: false, orden_presentacion: 2, estatus: true, fecha_creacion: '' },
+    { id_valor_catalogo: 'mock-val-3', tipo_catalogo: 'Prioridad', valor: 'Baja', descripcion: 'Sin urgencia', es_modificable: true, orden_presentacion: 3, estatus: true, fecha_creacion: '' },
+  ],
+  Tipo_Documento: [
+    { id_valor_catalogo: 'mock-val-4', tipo_catalogo: 'Tipo_Documento', valor: 'Oficio', descripcion: 'Documento oficial', es_modificable: false, orden_presentacion: 1, estatus: true, fecha_creacion: '' },
+    { id_valor_catalogo: 'mock-val-5', tipo_catalogo: 'Tipo_Documento', valor: 'Circular', descripcion: 'Comunicado general', es_modificable: false, orden_presentacion: 2, estatus: true, fecha_creacion: '' },
+    { id_valor_catalogo: 'mock-val-6', tipo_catalogo: 'Tipo_Documento', valor: 'Memorandum', descripcion: 'Comunicacion interna', es_modificable: true, orden_presentacion: 3, estatus: true, fecha_creacion: '' },
+    { id_valor_catalogo: 'mock-val-7', tipo_catalogo: 'Tipo_Documento', valor: 'Nota Informativa', descripcion: 'Informacion general', es_modificable: true, orden_presentacion: 4, estatus: true, fecha_creacion: '' },
+  ],
+  Area_Remitente: [
+    { id_valor_catalogo: 'mock-val-8', tipo_catalogo: 'Area_Remitente', valor: 'Gobierno Federal', descripcion: null, es_modificable: true, orden_presentacion: 1, estatus: true, fecha_creacion: '' },
+    { id_valor_catalogo: 'mock-val-9', tipo_catalogo: 'Area_Remitente', valor: 'Gobierno Estatal', descripcion: null, es_modificable: true, orden_presentacion: 2, estatus: true, fecha_creacion: '' },
+    { id_valor_catalogo: 'mock-val-10', tipo_catalogo: 'Area_Remitente', valor: 'Particular', descripcion: null, es_modificable: true, orden_presentacion: 3, estatus: true, fecha_creacion: '' },
+  ],
+  Instruccion: [
+    { id_valor_catalogo: 'mock-val-11', tipo_catalogo: 'Instruccion', valor: 'Para su atencion', descripcion: null, es_modificable: false, orden_presentacion: 1, estatus: true, fecha_creacion: '' },
+    { id_valor_catalogo: 'mock-val-12', tipo_catalogo: 'Instruccion', valor: 'Para su conocimiento', descripcion: null, es_modificable: false, orden_presentacion: 2, estatus: true, fecha_creacion: '' },
+    { id_valor_catalogo: 'mock-val-13', tipo_catalogo: 'Instruccion', valor: 'Para su seguimiento', descripcion: null, es_modificable: true, orden_presentacion: 3, estatus: true, fecha_creacion: '' },
+  ],
+  Categoria_Inventario: [
+    { id_valor_catalogo: 'mock-val-14', tipo_catalogo: 'Categoria_Inventario', valor: 'Mobiliario', descripcion: null, es_modificable: true, orden_presentacion: 1, estatus: true, fecha_creacion: '' },
+    { id_valor_catalogo: 'mock-val-15', tipo_catalogo: 'Categoria_Inventario', valor: 'Equipo de Computo', descripcion: null, es_modificable: true, orden_presentacion: 2, estatus: true, fecha_creacion: '' },
+    { id_valor_catalogo: 'mock-val-16', tipo_catalogo: 'Categoria_Inventario', valor: 'Vehiculos', descripcion: null, es_modificable: true, orden_presentacion: 3, estatus: true, fecha_creacion: '' },
+  ],
+};
+
 export default function CatalogosPage() {
+  const { isDevMode } = useAuth();
   const [valores, setValores] = useState<ValorCatalogo[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -55,6 +89,14 @@ export default function CatalogosPage() {
 
   const fetchValores = async () => {
     setLoading(true);
+
+    // En modo desarrollo, usar datos mock
+    if (isDevMode || DEV_MODE) {
+      setValores(MOCK_VALORES[tipoSeleccionado] || []);
+      setLoading(false);
+      return;
+    }
+
     const { data, error } = await supabase
       .from('cat_valores_catalogo')
       .select('*')
@@ -62,7 +104,7 @@ export default function CatalogosPage() {
       .order('orden_presentacion');
 
     if (error) {
-      toast.error('Error al cargar catálogos');
+      toast.error('Error al cargar catalogos');
     } else {
       setValores(data || []);
     }
@@ -93,6 +135,14 @@ export default function CatalogosPage() {
   const handleSubmit = async () => {
     if (!formData.valor) {
       toast.error('El valor es requerido');
+      return;
+    }
+
+    // En modo desarrollo, simular guardado
+    if (isDevMode || DEV_MODE) {
+      await new Promise(resolve => setTimeout(resolve, 500));
+      toast.success(editingValor ? 'Valor actualizado (modo desarrollo)' : 'Valor creado (modo desarrollo)');
+      onClose();
       return;
     }
 
@@ -129,12 +179,19 @@ export default function CatalogosPage() {
     }
   };
 
-  const handleDelete = async (id: string, esModificable: boolean) => {
+  const handleDelete = async (id: string, esModificable: boolean, valor: string) => {
     if (!esModificable) {
       toast.error('Este valor no puede ser eliminado');
       return;
     }
-    if (!confirm('¿Eliminar este valor?')) return;
+
+    // En modo desarrollo, simular eliminacion
+    if (isDevMode || DEV_MODE) {
+      toast.success(`"${valor}" desactivado (modo desarrollo)`);
+      return;
+    }
+
+    if (!confirm('Eliminar este valor?')) return;
 
     const { error } = await supabase
       .from('cat_valores_catalogo')
@@ -154,111 +211,155 @@ export default function CatalogosPage() {
   );
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Header */}
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-2xl font-bold flex items-center gap-2">
-            <ListTree className="text-primary" />
-            Catálogos del Sistema
+          <h1
+            className="text-xl sm:text-2xl font-bold flex items-center gap-2"
+            style={{ color: 'var(--theme-primary-800)' }}
+          >
+            <ListTree style={{ color: 'var(--theme-primary-600)' }} />
+            Catalogos del Sistema
           </h1>
-          <p className="text-gray-500">Gestión de valores de catálogos</p>
+          <p className="text-sm text-gray-500">Gestion de valores de catalogos</p>
         </div>
-        <Button color="primary" startContent={<Plus size={18} />} onPress={() => handleOpenModal()}>
-          Nuevo Valor
-        </Button>
+        <div className="flex gap-2">
+          <Button isIconOnly variant="flat" onPress={fetchValores} isLoading={loading}>
+            <RefreshCw size={18} />
+          </Button>
+          <Button
+            color="primary"
+            startContent={<Plus size={18} />}
+            style={{ backgroundColor: 'var(--theme-primary-700)' }}
+            onPress={() => handleOpenModal()}
+          >
+            <span className="hidden sm:inline">Nuevo Valor</span>
+            <span className="sm:hidden">Nuevo</span>
+          </Button>
+        </div>
       </div>
 
       {/* Tabs de tipos */}
-      <Tabs
-        selectedKey={tipoSeleccionado}
-        onSelectionChange={(key) => setTipoSeleccionado(key as string)}
-      >
-        {tiposCatalogo.map((tipo) => (
-          <Tab key={tipo.key} title={tipo.label} />
-        ))}
-      </Tabs>
+      <Card className="shadow-sm overflow-x-auto">
+        <CardBody className="p-2 sm:p-3">
+          <Tabs
+            selectedKey={tipoSeleccionado}
+            onSelectionChange={(key) => setTipoSeleccionado(key as string)}
+            size="sm"
+            variant="underlined"
+            classNames={{
+              tabList: 'flex-wrap gap-1',
+              tab: 'px-2 sm:px-4',
+            }}
+          >
+            {tiposCatalogo.map((tipo) => (
+              <Tab key={tipo.key} title={<span className="text-xs sm:text-sm">{tipo.label}</span>} />
+            ))}
+          </Tabs>
+        </CardBody>
+      </Card>
 
-      {/* Búsqueda */}
-      <Input
-        placeholder="Buscar valor..."
-        value={search}
-        onValueChange={setSearch}
-        startContent={<Search size={18} className="text-gray-400" />}
-        className="max-w-md"
-      />
+      {/* Busqueda */}
+      <Card className="shadow-sm">
+        <CardBody className="p-3 sm:p-4">
+          <Input
+            placeholder="Buscar valor..."
+            value={search}
+            onValueChange={setSearch}
+            startContent={<Search size={18} className="text-gray-400" />}
+            size="sm"
+          />
+        </CardBody>
+      </Card>
 
       {/* Tabla */}
-      <Table aria-label="Valores de catálogo">
-        <TableHeader>
-          <TableColumn>VALOR</TableColumn>
-          <TableColumn>DESCRIPCIÓN</TableColumn>
-          <TableColumn>ORDEN</TableColumn>
-          <TableColumn>MODIFICABLE</TableColumn>
-          <TableColumn>ESTATUS</TableColumn>
-          <TableColumn>ACCIONES</TableColumn>
-        </TableHeader>
-        <TableBody items={filteredValores} isLoading={loading} emptyContent="Sin valores">
-          {(valor) => (
-            <TableRow key={valor.id_valor_catalogo}>
-              <TableCell className="font-medium">{valor.valor}</TableCell>
-              <TableCell className="text-gray-500">{valor.descripcion || '-'}</TableCell>
-              <TableCell>{valor.orden_presentacion}</TableCell>
-              <TableCell>
-                <Chip size="sm" color={valor.es_modificable ? 'success' : 'warning'}>
-                  {valor.es_modificable ? 'Sí' : 'No'}
-                </Chip>
-              </TableCell>
-              <TableCell>
-                <Chip size="sm" color={valor.estatus ? 'success' : 'danger'}>
-                  {valor.estatus ? 'Activo' : 'Inactivo'}
-                </Chip>
-              </TableCell>
-              <TableCell>
-                <div className="flex gap-2">
-                  <Tooltip content="Editar">
-                    <Button
-                      isIconOnly
-                      size="sm"
-                      variant="light"
-                      onPress={() => handleOpenModal(valor)}
-                      isDisabled={!valor.es_modificable}
-                    >
-                      <Edit size={16} />
-                    </Button>
-                  </Tooltip>
-                  <Tooltip content="Eliminar">
-                    <Button
-                      isIconOnly
-                      size="sm"
-                      variant="light"
-                      color="danger"
-                      onPress={() => handleDelete(valor.id_valor_catalogo, valor.es_modificable)}
-                      isDisabled={!valor.es_modificable}
-                    >
-                      <Trash2 size={16} />
-                    </Button>
-                  </Tooltip>
-                </div>
-              </TableCell>
-            </TableRow>
-          )}
-        </TableBody>
-      </Table>
+      <Card className="shadow-sm overflow-hidden">
+        <Table aria-label="Valores de catalogo" removeWrapper>
+          <TableHeader>
+            <TableColumn className="text-xs">VALOR</TableColumn>
+            <TableColumn className="text-xs hidden md:table-cell">DESCRIPCION</TableColumn>
+            <TableColumn className="text-xs hidden sm:table-cell">ORDEN</TableColumn>
+            <TableColumn className="text-xs">MODIFICABLE</TableColumn>
+            <TableColumn className="text-xs">ESTATUS</TableColumn>
+            <TableColumn className="text-xs">ACCIONES</TableColumn>
+          </TableHeader>
+          <TableBody items={filteredValores} isLoading={loading} emptyContent="Sin valores">
+            {(valor) => (
+              <TableRow key={valor.id_valor_catalogo} className="hover:bg-gray-50">
+                <TableCell>
+                  <span
+                    className="text-xs sm:text-sm font-medium"
+                    style={{ color: 'var(--theme-primary-700)' }}
+                  >
+                    {valor.valor}
+                  </span>
+                </TableCell>
+                <TableCell className="hidden md:table-cell">
+                  <span className="text-xs text-gray-500">{valor.descripcion || '-'}</span>
+                </TableCell>
+                <TableCell className="hidden sm:table-cell">
+                  <span className="text-xs">{valor.orden_presentacion}</span>
+                </TableCell>
+                <TableCell>
+                  <Chip size="sm" color={valor.es_modificable ? 'success' : 'warning'} variant="flat">
+                    <span className="text-[10px]">{valor.es_modificable ? 'Si' : 'No'}</span>
+                  </Chip>
+                </TableCell>
+                <TableCell>
+                  <Chip size="sm" color={valor.estatus ? 'success' : 'danger'} variant="flat">
+                    <span className="text-[10px]">{valor.estatus ? 'Activo' : 'Inactivo'}</span>
+                  </Chip>
+                </TableCell>
+                <TableCell>
+                  <div className="flex gap-1">
+                    <Tooltip content="Editar">
+                      <Button
+                        isIconOnly
+                        size="sm"
+                        variant="light"
+                        onPress={() => handleOpenModal(valor)}
+                        isDisabled={!valor.es_modificable}
+                      >
+                        <Edit size={16} style={{ color: valor.es_modificable ? 'var(--theme-primary-600)' : '#ccc' }} />
+                      </Button>
+                    </Tooltip>
+                    <Tooltip content="Eliminar">
+                      <Button
+                        isIconOnly
+                        size="sm"
+                        variant="light"
+                        color="danger"
+                        onPress={() => handleDelete(valor.id_valor_catalogo, valor.es_modificable, valor.valor)}
+                        isDisabled={!valor.es_modificable}
+                      >
+                        <Trash2 size={16} />
+                      </Button>
+                    </Tooltip>
+                  </div>
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+      </Card>
 
       {/* Modal */}
-      <Modal isOpen={isOpen} onClose={onClose}>
+      <Modal isOpen={isOpen} onClose={onClose} scrollBehavior="inside">
         <ModalContent>
-          <ModalHeader>{editingValor ? 'Editar Valor' : 'Nuevo Valor'}</ModalHeader>
+          <ModalHeader style={{ color: 'var(--theme-primary-700)' }}>
+            {editingValor ? 'Editar Valor' : 'Nuevo Valor'}
+          </ModalHeader>
           <ModalBody>
             <div className="space-y-4">
               <Select
-                label="Tipo de Catálogo"
+                label="Tipo de Catalogo"
                 selectedKeys={[formData.tipo_catalogo]}
                 onSelectionChange={(keys) =>
                   setFormData({ ...formData, tipo_catalogo: Array.from(keys)[0] as string })
                 }
                 isDisabled={!!editingValor}
+                size="sm"
               >
                 {tiposCatalogo.map((tipo) => (
                   <SelectItem key={tipo.key}>{tipo.label}</SelectItem>
@@ -270,18 +371,21 @@ export default function CatalogosPage() {
                 value={formData.valor}
                 onValueChange={(v) => setFormData({ ...formData, valor: v })}
                 isRequired
+                size="sm"
               />
               <Input
-                label="Descripción"
-                placeholder="Descripción opcional"
+                label="Descripcion"
+                placeholder="Descripcion opcional"
                 value={formData.descripcion}
                 onValueChange={(v) => setFormData({ ...formData, descripcion: v })}
+                size="sm"
               />
               <Input
                 type="number"
-                label="Orden de Presentación"
+                label="Orden de Presentacion"
                 value={formData.orden_presentacion}
                 onValueChange={(v) => setFormData({ ...formData, orden_presentacion: v })}
+                size="sm"
               />
             </div>
           </ModalBody>
@@ -289,12 +393,23 @@ export default function CatalogosPage() {
             <Button variant="light" onPress={onClose}>
               Cancelar
             </Button>
-            <Button color="primary" onPress={handleSubmit}>
+            <Button
+              color="primary"
+              onPress={handleSubmit}
+              style={{ backgroundColor: 'var(--theme-primary-700)' }}
+            >
               {editingValor ? 'Actualizar' : 'Crear'}
             </Button>
           </ModalFooter>
         </ModalContent>
       </Modal>
+
+      {/* Info de modo desarrollo */}
+      {(isDevMode || DEV_MODE) && (
+        <p className="text-xs text-center text-gray-400">
+          Modo desarrollo - Mostrando {filteredValores.length} valores de ejemplo
+        </p>
+      )}
     </div>
   );
 }

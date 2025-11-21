@@ -19,21 +19,24 @@ import {
   Textarea,
   CheckboxGroup,
   Checkbox,
+  Card,
+  CardBody,
 } from '@nextui-org/react';
-import { Plus, Search, Edit, UserCog } from 'lucide-react';
-import { supabase } from '../../lib/supabase';
+import { Plus, Search, Edit, UserCog, RefreshCw } from 'lucide-react';
+import { supabase, DEV_MODE } from '../../lib/supabase';
+import { useAuth } from '../../contexts/AuthContext';
 import { toast } from 'sonner';
 import type { Rol } from '../../types/database';
 
 const modulosDisponibles = [
-  { key: 'admin', label: 'Administración' },
-  { key: 'admin_usuarios', label: 'Gestión de Usuarios' },
+  { key: 'admin', label: 'Administracion' },
+  { key: 'admin_usuarios', label: 'Gestion de Usuarios' },
   { key: 'doc_entrante', label: 'Documentos Entrantes' },
   { key: 'seguimiento', label: 'Seguimiento/Turnado' },
   { key: 'doc_saliente', label: 'Documentos Salientes' },
   { key: 'dashboard', label: 'Dashboard' },
-  { key: 'consultas', label: 'Consultas/Búsqueda' },
-  { key: 'auditoria', label: 'Auditoría' },
+  { key: 'consultas', label: 'Consultas/Busqueda' },
+  { key: 'auditoria', label: 'Auditoria' },
   { key: 'inventario', label: 'Inventario' },
 ];
 
@@ -51,7 +54,56 @@ const accionesDisponibles = [
   { key: 'elaborar', label: 'Elaborar Documentos' },
 ];
 
+// Datos mock para modo desarrollo
+const MOCK_ROLES: Rol[] = [
+  {
+    id_rol: 'mock-rol-1',
+    nombre_rol: 'Administrador General',
+    descripcion: 'Acceso total al sistema',
+    elementos_menu: {
+      modulos: ['admin', 'admin_usuarios', 'doc_entrante', 'seguimiento', 'doc_saliente', 'dashboard', 'consultas', 'auditoria', 'inventario'],
+      acciones: ['crear', 'editar', 'eliminar', 'turnar', 'firmar', 'rechazar', 'concluir', 'exportar', 'ver', 'avance', 'elaborar'],
+    },
+    estatus: true,
+    fecha_creacion: new Date().toISOString(),
+  },
+  {
+    id_rol: 'mock-rol-2',
+    nombre_rol: 'Administrador de UA',
+    descripcion: 'Administrador de Unidad Administrativa',
+    elementos_menu: {
+      modulos: ['admin_usuarios', 'doc_entrante', 'seguimiento', 'doc_saliente', 'dashboard', 'consultas', 'inventario'],
+      acciones: ['crear', 'editar', 'turnar', 'firmar', 'rechazar', 'concluir', 'exportar', 'ver', 'avance', 'elaborar'],
+    },
+    estatus: true,
+    fecha_creacion: new Date().toISOString(),
+  },
+  {
+    id_rol: 'mock-rol-3',
+    nombre_rol: 'Operador',
+    descripcion: 'Usuario operativo para gestion de documentos',
+    elementos_menu: {
+      modulos: ['doc_entrante', 'seguimiento', 'doc_saliente', 'dashboard', 'consultas'],
+      acciones: ['crear', 'editar', 'turnar', 'ver', 'avance', 'elaborar'],
+    },
+    estatus: true,
+    fecha_creacion: new Date().toISOString(),
+  },
+  {
+    id_rol: 'mock-rol-4',
+    nombre_rol: 'Consulta',
+    descripcion: 'Solo lectura para consulta de documentos',
+    elementos_menu: {
+      modulos: ['doc_entrante', 'seguimiento', 'dashboard', 'consultas'],
+      acciones: ['ver'],
+    },
+    estatus: true,
+    fecha_creacion: new Date().toISOString(),
+  },
+];
+
 export default function RolesPage() {
+  const { isDevMode } = useAuth();
   const [roles, setRoles] = useState<Rol[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -71,6 +123,14 @@ export default function RolesPage() {
 
   const fetchRoles = async () => {
     setLoading(true);
+
+    // En modo desarrollo, usar datos mock
+    if (isDevMode || DEV_MODE) {
+      setRoles(MOCK_ROLES);
+      setLoading(false);
+      return;
+    }
+
     const { data, error } = await supabase
       .from('cat_roles')
       .select('*')
@@ -109,6 +169,14 @@ export default function RolesPage() {
   const handleSubmit = async () => {
     if (!formData.nombre_rol) {
       toast.error('El nombre del rol es requerido');
+      return;
+    }
+
+    // En modo desarrollo, simular guardado
+    if (isDevMode || DEV_MODE) {
+      await new Promise(resolve => setTimeout(resolve, 500));
+      toast.success(editingRol ? 'Rol actualizado (modo desarrollo)' : 'Rol creado (modo desarrollo)');
+      onClose();
       return;
     }
 
@@ -156,123 +224,171 @@ export default function RolesPage() {
     return menu?.modulos?.length || 0;
   };
 
+  const getAccionesCount = (rol: Rol) => {
+    const menu = rol.elementos_menu as { acciones?: string[] };
+    return menu?.acciones?.length || 0;
+  };
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Header */}
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-2xl font-bold flex items-center gap-2">
-            <UserCog className="text-primary" />
+          <h1
+            className="text-xl sm:text-2xl font-bold flex items-center gap-2"
+            style={{ color: 'var(--theme-primary-800)' }}
+          >
+            <UserCog style={{ color: 'var(--theme-primary-600)' }} />
             Roles del Sistema
           </h1>
-          <p className="text-gray-500">Gestión de permisos y accesos</p>
+          <p className="text-sm text-gray-500">Gestion de permisos y accesos</p>
         </div>
-        <Button color="primary" startContent={<Plus size={18} />} onPress={() => handleOpenModal()}>
-          Nuevo Rol
-        </Button>
+        <div className="flex gap-2">
+          <Button isIconOnly variant="flat" onPress={fetchRoles} isLoading={loading}>
+            <RefreshCw size={18} />
+          </Button>
+          <Button
+            color="primary"
+            startContent={<Plus size={18} />}
+            style={{ backgroundColor: 'var(--theme-primary-700)' }}
+            onPress={() => handleOpenModal()}
+          >
+            <span className="hidden sm:inline">Nuevo Rol</span>
+            <span className="sm:hidden">Nuevo</span>
+          </Button>
+        </div>
       </div>
 
-      {/* Búsqueda */}
-      <Input
-        placeholder="Buscar rol..."
-        value={search}
-        onValueChange={setSearch}
-        startContent={<Search size={18} className="text-gray-400" />}
-        className="max-w-md"
-      />
+      {/* Busqueda */}
+      <Card className="shadow-sm">
+        <CardBody className="p-3 sm:p-4">
+          <Input
+            placeholder="Buscar rol..."
+            value={search}
+            onValueChange={setSearch}
+            startContent={<Search size={18} className="text-gray-400" />}
+            size="sm"
+          />
+        </CardBody>
+      </Card>
 
       {/* Tabla */}
-      <Table aria-label="Roles del sistema">
-        <TableHeader>
-          <TableColumn>NOMBRE</TableColumn>
-          <TableColumn>DESCRIPCIÓN</TableColumn>
-          <TableColumn>MÓDULOS</TableColumn>
-          <TableColumn>ESTATUS</TableColumn>
-          <TableColumn>ACCIONES</TableColumn>
-        </TableHeader>
-        <TableBody items={filteredRoles} isLoading={loading} emptyContent="No hay roles">
-          {(rol) => (
-            <TableRow key={rol.id_rol}>
-              <TableCell className="font-medium">{rol.nombre_rol}</TableCell>
-              <TableCell className="text-gray-500 max-w-xs truncate">
-                {rol.descripcion || '-'}
-              </TableCell>
-              <TableCell>
-                <Chip size="sm" variant="flat">
-                  {getModulosCount(rol)} módulos
-                </Chip>
-              </TableCell>
-              <TableCell>
-                <Chip size="sm" color={rol.estatus ? 'success' : 'danger'}>
-                  {rol.estatus ? 'Activo' : 'Inactivo'}
-                </Chip>
-              </TableCell>
-              <TableCell>
-                <Tooltip content="Editar">
-                  <Button
-                    isIconOnly
-                    size="sm"
-                    variant="light"
-                    onPress={() => handleOpenModal(rol)}
+      <Card className="shadow-sm overflow-hidden">
+        <Table aria-label="Roles del sistema" removeWrapper>
+          <TableHeader>
+            <TableColumn className="text-xs">NOMBRE</TableColumn>
+            <TableColumn className="text-xs hidden md:table-cell">DESCRIPCION</TableColumn>
+            <TableColumn className="text-xs">MODULOS</TableColumn>
+            <TableColumn className="text-xs hidden sm:table-cell">ACCIONES</TableColumn>
+            <TableColumn className="text-xs">ESTATUS</TableColumn>
+            <TableColumn className="text-xs">EDITAR</TableColumn>
+          </TableHeader>
+          <TableBody items={filteredRoles} isLoading={loading} emptyContent="No hay roles">
+            {(rol) => (
+              <TableRow key={rol.id_rol} className="hover:bg-gray-50">
+                <TableCell>
+                  <span
+                    className="text-xs sm:text-sm font-medium"
+                    style={{ color: 'var(--theme-primary-700)' }}
                   >
-                    <Edit size={16} />
-                  </Button>
-                </Tooltip>
-              </TableCell>
-            </TableRow>
-          )}
-        </TableBody>
-      </Table>
+                    {rol.nombre_rol}
+                  </span>
+                </TableCell>
+                <TableCell className="hidden md:table-cell">
+                  <span className="text-xs text-gray-500 truncate max-w-xs">
+                    {rol.descripcion || '-'}
+                  </span>
+                </TableCell>
+                <TableCell>
+                  <Chip size="sm" variant="flat" color="primary">
+                    <span className="text-[10px]">{getModulosCount(rol)} modulos</span>
+                  </Chip>
+                </TableCell>
+                <TableCell className="hidden sm:table-cell">
+                  <Chip size="sm" variant="flat" color="secondary">
+                    <span className="text-[10px]">{getAccionesCount(rol)} acciones</span>
+                  </Chip>
+                </TableCell>
+                <TableCell>
+                  <Chip size="sm" color={rol.estatus ? 'success' : 'danger'} variant="flat">
+                    <span className="text-[10px]">{rol.estatus ? 'Activo' : 'Inactivo'}</span>
+                  </Chip>
+                </TableCell>
+                <TableCell>
+                  <Tooltip content="Editar">
+                    <Button
+                      isIconOnly
+                      size="sm"
+                      variant="light"
+                      onPress={() => handleOpenModal(rol)}
+                    >
+                      <Edit size={16} style={{ color: 'var(--theme-primary-600)' }} />
+                    </Button>
+                  </Tooltip>
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+      </Card>
 
       {/* Modal */}
       <Modal isOpen={isOpen} onClose={onClose} size="3xl" scrollBehavior="inside">
         <ModalContent>
-          <ModalHeader>{editingRol ? 'Editar Rol' : 'Nuevo Rol'}</ModalHeader>
+          <ModalHeader style={{ color: 'var(--theme-primary-700)' }}>
+            {editingRol ? 'Editar Rol' : 'Nuevo Rol'}
+          </ModalHeader>
           <ModalBody>
             <div className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <Input
                   label="Nombre del Rol"
                   placeholder="Ej: Supervisor"
                   value={formData.nombre_rol}
                   onValueChange={(v) => setFormData({ ...formData, nombre_rol: v })}
                   isRequired
+                  size="sm"
                 />
                 <Textarea
-                  label="Descripción"
-                  placeholder="Descripción del rol..."
+                  label="Descripcion"
+                  placeholder="Descripcion del rol..."
                   value={formData.descripcion}
                   onValueChange={(v) => setFormData({ ...formData, descripcion: v })}
+                  size="sm"
                 />
               </div>
 
               <div>
-                <p className="font-medium mb-3">Módulos Permitidos</p>
+                <p className="font-medium mb-3 text-sm" style={{ color: 'var(--theme-primary-700)' }}>
+                  Modulos Permitidos
+                </p>
                 <CheckboxGroup
                   value={formData.modulos}
                   onValueChange={(v) => setFormData({ ...formData, modulos: v })}
                   orientation="horizontal"
-                  className="gap-4"
+                  className="gap-3 flex-wrap"
                 >
                   {modulosDisponibles.map((mod) => (
-                    <Checkbox key={mod.key} value={mod.key}>
-                      {mod.label}
+                    <Checkbox key={mod.key} value={mod.key} size="sm">
+                      <span className="text-xs">{mod.label}</span>
                     </Checkbox>
                   ))}
                 </CheckboxGroup>
               </div>
 
               <div>
-                <p className="font-medium mb-3">Acciones Permitidas</p>
+                <p className="font-medium mb-3 text-sm" style={{ color: 'var(--theme-primary-700)' }}>
+                  Acciones Permitidas
+                </p>
                 <CheckboxGroup
                   value={formData.acciones}
                   onValueChange={(v) => setFormData({ ...formData, acciones: v })}
                   orientation="horizontal"
-                  className="gap-4"
+                  className="gap-3 flex-wrap"
                 >
                   {accionesDisponibles.map((acc) => (
-                    <Checkbox key={acc.key} value={acc.key}>
-                      {acc.label}
+                    <Checkbox key={acc.key} value={acc.key} size="sm">
+                      <span className="text-xs">{acc.label}</span>
                     </Checkbox>
                   ))}
                 </CheckboxGroup>
@@ -283,12 +399,23 @@ export default function RolesPage() {
             <Button variant="light" onPress={onClose}>
               Cancelar
             </Button>
-            <Button color="primary" onPress={handleSubmit}>
+            <Button
+              color="primary"
+              onPress={handleSubmit}
+              style={{ backgroundColor: 'var(--theme-primary-700)' }}
+            >
               {editingRol ? 'Actualizar' : 'Crear'}
             </Button>
           </ModalFooter>
         </ModalContent>
       </Modal>
+
+      {/* Info de modo desarrollo */}
+      {(isDevMode || DEV_MODE) && (
+        <p className="text-xs text-center text-gray-400">
+          Modo desarrollo - Mostrando {filteredRoles.length} roles de ejemplo
+        </p>
+      )}
     </div>
   );
 }
