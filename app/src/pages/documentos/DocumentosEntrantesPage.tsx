@@ -14,9 +14,11 @@ import {
   Pagination,
   Select,
   SelectItem,
+  Card,
+  CardBody,
 } from '@nextui-org/react';
-import { Plus, Search, Eye, Send, FileText, Filter } from 'lucide-react';
-import { supabase } from '../../lib/supabase';
+import { Plus, Search, Eye, Send, FileText, Filter, RefreshCw } from 'lucide-react';
+import { supabase, DEV_MODE } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import type { DocumentoEntrante, ValorCatalogo } from '../../types/database';
 
@@ -25,9 +27,116 @@ interface DocExtendido extends DocumentoEntrante {
   tipo_documento?: ValorCatalogo;
 }
 
+// Datos mock para modo desarrollo
+const MOCK_DOCUMENTOS: DocExtendido[] = [
+  {
+    id_doc_entrante: 'mock-doc-1',
+    folio_interno: 'DOC-2025-0156',
+    numero_oficio_externo: 'OF-EXT-2025-001',
+    fecha_documento: new Date().toISOString(),
+    fecha_registro: new Date().toISOString(),
+    asunto: 'Solicitud de informacion sobre programa de apoyo social 2025',
+    id_prioridad: 'p1',
+    id_tipo_doc: 't1',
+    id_area_remitente: 'a1',
+    remitente_nombre: 'Lic. Maria Garcia Lopez',
+    remitente_cargo: 'Directora General',
+    remitente_institucion: 'Secretaria de Desarrollo Social',
+    marca_seguimiento: 'Turnarse',
+    estatus_general: 'Pendiente',
+    id_ua_registro: 'ua1',
+    id_usuario_registro: 'u1',
+    eliminado: false,
+    fecha_creacion: new Date().toISOString(),
+    prioridad: { id_valor_catalogo: 'p1', tipo_catalogo: 'PRIORIDAD', valor: 'Urgente', descripcion: null, es_modificable: true, orden_presentacion: 1, estatus: true, fecha_creacion: '' },
+  },
+  {
+    id_doc_entrante: 'mock-doc-2',
+    folio_interno: 'DOC-2025-0155',
+    numero_oficio_externo: 'OF-EXT-2025-002',
+    fecha_documento: new Date(Date.now() - 86400000).toISOString(),
+    fecha_registro: new Date(Date.now() - 86400000).toISOString(),
+    asunto: 'Convenio de colaboracion interinstitucional para proyectos de infraestructura',
+    id_prioridad: 'p2',
+    id_tipo_doc: 't2',
+    id_area_remitente: 'a2',
+    remitente_nombre: 'Ing. Roberto Martinez',
+    remitente_cargo: 'Coordinador de Proyectos',
+    remitente_institucion: 'Secretaria de Obras Publicas',
+    marca_seguimiento: 'Para_Conocimiento',
+    estatus_general: 'En_Proceso',
+    id_ua_registro: 'ua1',
+    id_usuario_registro: 'u1',
+    eliminado: false,
+    fecha_creacion: new Date().toISOString(),
+    prioridad: { id_valor_catalogo: 'p2', tipo_catalogo: 'PRIORIDAD', valor: 'Normal', descripcion: null, es_modificable: true, orden_presentacion: 2, estatus: true, fecha_creacion: '' },
+  },
+  {
+    id_doc_entrante: 'mock-doc-3',
+    folio_interno: 'DOC-2025-0154',
+    numero_oficio_externo: 'OF-EXT-2025-003',
+    fecha_documento: new Date(Date.now() - 172800000).toISOString(),
+    fecha_registro: new Date(Date.now() - 172800000).toISOString(),
+    asunto: 'Respuesta a oficio numero 123/2025 sobre revision de presupuesto',
+    id_prioridad: 'p2',
+    id_tipo_doc: 't1',
+    id_area_remitente: 'a3',
+    remitente_nombre: 'C.P. Ana Hernandez',
+    remitente_cargo: 'Tesorera',
+    remitente_institucion: 'Secretaria de Finanzas',
+    marca_seguimiento: 'Turnarse',
+    estatus_general: 'Concluido',
+    id_ua_registro: 'ua1',
+    id_usuario_registro: 'u1',
+    eliminado: false,
+    fecha_creacion: new Date().toISOString(),
+  },
+  {
+    id_doc_entrante: 'mock-doc-4',
+    folio_interno: 'DOC-2025-0153',
+    numero_oficio_externo: null,
+    fecha_documento: new Date(Date.now() - 259200000).toISOString(),
+    fecha_registro: new Date(Date.now() - 259200000).toISOString(),
+    asunto: 'Invitacion a evento oficial del gobierno estatal - Informe de actividades',
+    id_prioridad: 'p2',
+    id_tipo_doc: 't3',
+    id_area_remitente: 'a4',
+    remitente_nombre: 'Lic. Carlos Ruiz',
+    remitente_cargo: 'Secretario Particular',
+    remitente_institucion: 'Oficina del Gobernador',
+    marca_seguimiento: 'Para_Conocimiento',
+    estatus_general: 'En_Proceso',
+    id_ua_registro: 'ua1',
+    id_usuario_registro: 'u1',
+    eliminado: false,
+    fecha_creacion: new Date().toISOString(),
+  },
+  {
+    id_doc_entrante: 'mock-doc-5',
+    folio_interno: 'DOC-2025-0152',
+    numero_oficio_externo: 'OF-EXT-2025-005',
+    fecha_documento: new Date(Date.now() - 345600000).toISOString(),
+    fecha_registro: new Date(Date.now() - 345600000).toISOString(),
+    asunto: 'Tramite de licencia de funcionamiento para nuevo centro comunitario',
+    id_prioridad: 'p1',
+    id_tipo_doc: 't1',
+    id_area_remitente: 'a5',
+    remitente_nombre: 'Arq. Patricia Sanchez',
+    remitente_cargo: 'Directora de Licencias',
+    remitente_institucion: 'Secretaria de Desarrollo Urbano',
+    marca_seguimiento: 'Turnarse',
+    estatus_general: 'Pendiente',
+    id_ua_registro: 'ua1',
+    id_usuario_registro: 'u1',
+    eliminado: false,
+    fecha_creacion: new Date().toISOString(),
+    prioridad: { id_valor_catalogo: 'p1', tipo_catalogo: 'PRIORIDAD', valor: 'Urgente', descripcion: null, es_modificable: true, orden_presentacion: 1, estatus: true, fecha_creacion: '' },
+  },
+];
+
 export default function DocumentosEntrantesPage() {
   const navigate = useNavigate();
-  const { usuario } = useAuth();
+  const { usuario, isDevMode } = useAuth();
   const [documentos, setDocumentos] = useState<DocExtendido[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -43,6 +152,19 @@ export default function DocumentosEntrantesPage() {
   const fetchDocumentos = async () => {
     setLoading(true);
 
+    // En modo desarrollo, usar datos mock
+    if (isDevMode || DEV_MODE) {
+      let filtered = [...MOCK_DOCUMENTOS];
+      if (filtroEstatus !== 'todos') {
+        filtered = filtered.filter(d => d.estatus_general === filtroEstatus);
+      }
+      setDocumentos(filtered);
+      setTotal(filtered.length);
+      setLoading(false);
+      return;
+    }
+
+    // Produccion
     let query = supabase
       .from('tbl_documento_entrante')
       .select(`
@@ -51,7 +173,7 @@ export default function DocumentosEntrantesPage() {
         tipo_documento:id_tipo_doc(id_valor_catalogo, valor)
       `, { count: 'exact' })
       .eq('eliminado', false)
-      .eq('id_ua_registro', usuario?.id_ua)
+      .eq('id_ua_registro', usuario?.unidad_administrativa?.id_ua)
       .order('fecha_registro', { ascending: false })
       .range((page - 1) * itemsPerPage, page * itemsPerPage - 1);
 
@@ -98,129 +220,189 @@ export default function DocumentosEntrantesPage() {
   );
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Header */}
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-2xl font-bold flex items-center gap-2">
-            <FileText className="text-primary" />
+          <h1
+            className="text-xl sm:text-2xl font-bold flex items-center gap-2"
+            style={{ color: 'var(--theme-primary-800)' }}
+          >
+            <FileText style={{ color: 'var(--theme-primary-600)' }} />
             Documentos Entrantes
           </h1>
-          <p className="text-gray-500">Gestión de correspondencia recibida</p>
+          <p className="text-sm text-gray-500">Gestion de correspondencia recibida</p>
         </div>
-        <Button
-          color="primary"
-          startContent={<Plus size={18} />}
-          onPress={() => navigate('/documentos/nuevo')}
-        >
-          Nuevo Documento
-        </Button>
+        <div className="flex gap-2">
+          <Button
+            isIconOnly
+            variant="flat"
+            onPress={fetchDocumentos}
+            isLoading={loading}
+          >
+            <RefreshCw size={18} />
+          </Button>
+          <Button
+            color="primary"
+            startContent={<Plus size={18} />}
+            style={{ backgroundColor: 'var(--theme-primary-700)' }}
+            onPress={() => navigate('/documentos/nuevo')}
+          >
+            <span className="hidden sm:inline">Nuevo Documento</span>
+            <span className="sm:hidden">Nuevo</span>
+          </Button>
+        </div>
       </div>
 
       {/* Filtros */}
-      <div className="flex flex-wrap gap-4">
-        <Input
-          placeholder="Buscar por folio, asunto o remitente..."
-          value={search}
-          onValueChange={setSearch}
-          startContent={<Search size={18} className="text-gray-400" />}
-          className="max-w-md"
-        />
-        <Select
-          placeholder="Filtrar por estatus"
-          selectedKeys={[filtroEstatus]}
-          onSelectionChange={(keys) => setFiltroEstatus(Array.from(keys)[0] as string)}
-          startContent={<Filter size={18} />}
-          className="w-48"
-        >
-          <SelectItem key="todos">Todos</SelectItem>
-          <SelectItem key="Pendiente">Pendiente</SelectItem>
-          <SelectItem key="En_Proceso">En Proceso</SelectItem>
-          <SelectItem key="Concluido">Concluido</SelectItem>
-          <SelectItem key="Archivado">Archivado</SelectItem>
-        </Select>
-      </div>
+      <Card className="shadow-sm">
+        <CardBody className="p-3 sm:p-4">
+          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
+            <Input
+              placeholder="Buscar por folio, asunto o remitente..."
+              value={search}
+              onValueChange={setSearch}
+              startContent={<Search size={18} className="text-gray-400" />}
+              className="flex-1"
+              size="sm"
+            />
+            <Select
+              placeholder="Estatus"
+              selectedKeys={[filtroEstatus]}
+              onSelectionChange={(keys) => setFiltroEstatus(Array.from(keys)[0] as string)}
+              startContent={<Filter size={16} />}
+              className="w-full sm:w-40"
+              size="sm"
+            >
+              <SelectItem key="todos">Todos</SelectItem>
+              <SelectItem key="Pendiente">Pendiente</SelectItem>
+              <SelectItem key="En_Proceso">En Proceso</SelectItem>
+              <SelectItem key="Concluido">Concluido</SelectItem>
+              <SelectItem key="Archivado">Archivado</SelectItem>
+            </Select>
+          </div>
+        </CardBody>
+      </Card>
 
       {/* Tabla */}
-      <Table
-        aria-label="Documentos entrantes"
-        bottomContent={
-          total > itemsPerPage && (
-            <div className="flex justify-center">
-              <Pagination
-                total={Math.ceil(total / itemsPerPage)}
-                page={page}
-                onChange={setPage}
-              />
-            </div>
-          )
-        }
-      >
-        <TableHeader>
-          <TableColumn>FOLIO</TableColumn>
-          <TableColumn>FECHA</TableColumn>
-          <TableColumn>ASUNTO</TableColumn>
-          <TableColumn>REMITENTE</TableColumn>
-          <TableColumn>PRIORIDAD</TableColumn>
-          <TableColumn>ESTATUS</TableColumn>
-          <TableColumn>ACCIONES</TableColumn>
-        </TableHeader>
-        <TableBody items={filteredDocs} isLoading={loading} emptyContent="Sin documentos">
-          {(doc) => (
-            <TableRow key={doc.id_doc_entrante}>
-              <TableCell className="font-mono text-sm">{doc.folio_interno}</TableCell>
-              <TableCell>{formatDate(doc.fecha_registro)}</TableCell>
-              <TableCell className="max-w-xs">
-                <p className="truncate" title={doc.asunto}>
-                  {doc.asunto}
-                </p>
-              </TableCell>
-              <TableCell>{doc.remitente_nombre || '-'}</TableCell>
-              <TableCell>
-                <Chip
+      <Card className="shadow-sm overflow-hidden">
+        <Table
+          aria-label="Documentos entrantes"
+          removeWrapper
+          bottomContent={
+            total > itemsPerPage && (
+              <div className="flex justify-center py-2">
+                <Pagination
+                  total={Math.ceil(total / itemsPerPage)}
+                  page={page}
+                  onChange={setPage}
                   size="sm"
-                  color={getPrioridadColor(doc.prioridad?.valor)}
-                  variant="flat"
-                >
-                  {doc.prioridad?.valor || 'Normal'}
-                </Chip>
-              </TableCell>
-              <TableCell>
-                <Chip size="sm" color={getEstatusColor(doc.estatus_general)}>
-                  {doc.estatus_general.replace('_', ' ')}
-                </Chip>
-              </TableCell>
-              <TableCell>
-                <div className="flex gap-2">
-                  <Tooltip content="Ver detalle">
-                    <Button
-                      isIconOnly
-                      size="sm"
-                      variant="light"
-                      onPress={() => navigate(`/documentos/${doc.id_doc_entrante}`)}
-                    >
-                      <Eye size={16} />
-                    </Button>
-                  </Tooltip>
-                  {doc.marca_seguimiento === 'Turnarse' && doc.estatus_general !== 'Concluido' && (
-                    <Tooltip content="Turnar">
+                />
+              </div>
+            )
+          }
+        >
+          <TableHeader>
+            <TableColumn className="text-xs">FOLIO</TableColumn>
+            <TableColumn className="text-xs hidden sm:table-cell">FECHA</TableColumn>
+            <TableColumn className="text-xs">ASUNTO</TableColumn>
+            <TableColumn className="text-xs hidden md:table-cell">REMITENTE</TableColumn>
+            <TableColumn className="text-xs hidden lg:table-cell">PRIORIDAD</TableColumn>
+            <TableColumn className="text-xs">ESTATUS</TableColumn>
+            <TableColumn className="text-xs">ACCIONES</TableColumn>
+          </TableHeader>
+          <TableBody items={filteredDocs} isLoading={loading} emptyContent="Sin documentos">
+            {(doc) => (
+              <TableRow key={doc.id_doc_entrante} className="hover:bg-gray-50">
+                <TableCell>
+                  <span
+                    className="font-mono text-xs sm:text-sm font-medium"
+                    style={{ color: 'var(--theme-primary-700)' }}
+                  >
+                    {doc.folio_interno}
+                  </span>
+                </TableCell>
+                <TableCell className="hidden sm:table-cell">
+                  <span className="text-xs text-gray-600">
+                    {formatDate(doc.fecha_registro)}
+                  </span>
+                </TableCell>
+                <TableCell>
+                  <div className="max-w-[150px] sm:max-w-[200px] md:max-w-xs">
+                    <p className="text-xs sm:text-sm truncate" title={doc.asunto}>
+                      {doc.asunto}
+                    </p>
+                  </div>
+                </TableCell>
+                <TableCell className="hidden md:table-cell">
+                  <span className="text-xs text-gray-600">
+                    {doc.remitente_nombre || '-'}
+                  </span>
+                </TableCell>
+                <TableCell className="hidden lg:table-cell">
+                  <Chip
+                    size="sm"
+                    color={getPrioridadColor(doc.prioridad?.valor)}
+                    variant="flat"
+                  >
+                    <span className="text-[10px]">
+                      {doc.prioridad?.valor || 'Normal'}
+                    </span>
+                  </Chip>
+                </TableCell>
+                <TableCell>
+                  <Chip size="sm" color={getEstatusColor(doc.estatus_general)} variant="flat">
+                    <span className="text-[10px]">
+                      {doc.estatus_general.replace('_', ' ')}
+                    </span>
+                  </Chip>
+                </TableCell>
+                <TableCell>
+                  <div className="flex gap-1">
+                    <Tooltip content="Ver detalle">
                       <Button
                         isIconOnly
                         size="sm"
                         variant="light"
-                        color="primary"
-                        onPress={() => navigate(`/turnado/nuevo/${doc.id_doc_entrante}`)}
+                        onPress={() => {
+                          if (!DEV_MODE && !isDevMode) {
+                            navigate(`/documentos/${doc.id_doc_entrante}`);
+                          }
+                        }}
                       >
-                        <Send size={16} />
+                        <Eye size={16} style={{ color: 'var(--theme-primary-600)' }} />
                       </Button>
                     </Tooltip>
-                  )}
-                </div>
-              </TableCell>
-            </TableRow>
-          )}
-        </TableBody>
-      </Table>
+                    {doc.marca_seguimiento === 'Turnarse' && doc.estatus_general !== 'Concluido' && (
+                      <Tooltip content="Turnar">
+                        <Button
+                          isIconOnly
+                          size="sm"
+                          variant="light"
+                          onPress={() => {
+                            if (!DEV_MODE && !isDevMode) {
+                              navigate(`/turnado/nuevo/${doc.id_doc_entrante}`);
+                            }
+                          }}
+                        >
+                          <Send size={16} className="text-green-600" />
+                        </Button>
+                      </Tooltip>
+                    )}
+                  </div>
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+      </Card>
+
+      {/* Info de modo desarrollo */}
+      {(isDevMode || DEV_MODE) && (
+        <p className="text-xs text-center text-gray-400">
+          Modo desarrollo - Mostrando {filteredDocs.length} documentos de ejemplo
+        </p>
+      )}
     </div>
   );
 }
