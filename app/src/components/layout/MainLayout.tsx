@@ -34,6 +34,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { toast } from 'sonner';
+import { ThemePalettePicker } from '../../shared/components/theme';
 
 const menuItems = [
   { key: 'dashboard', label: 'Inicio', icon: Home, path: '/' },
@@ -109,6 +110,11 @@ export default function MainLayout() {
             >
               Buscar
             </Button>
+          </NavbarItem>
+
+          {/* Selector de Tema */}
+          <NavbarItem className="hidden sm:flex">
+            <ThemePalettePicker />
           </NavbarItem>
 
           {/* Notificaciones */}

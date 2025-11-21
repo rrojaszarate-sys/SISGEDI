@@ -4,6 +4,11 @@
   --font-sans: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
 }
 
+/* ============================================================
+   CSS CUSTOM PROPERTIES PARA TEMAS DINAMICOS
+   Paleta por defecto: GUINDA (Gobierno Mexicano)
+   ============================================================ */
+
 :root {
   font-family: var(--font-sans);
   line-height: 1.5;
@@ -12,39 +17,293 @@
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+
+  /* Paleta GUINDA por defecto */
+  --theme-primary: #9a1f1f;
+  --theme-primary-50: #fdf2f2;
+  --theme-primary-100: #fde3e3;
+  --theme-primary-200: #fbcccc;
+  --theme-primary-300: #f8a8a8;
+  --theme-primary-400: #f17575;
+  --theme-primary-500: #e54949;
+  --theme-primary-600: #c22a2a;
+  --theme-primary-700: #9a1f1f;
+  --theme-primary-800: #801d1d;
+  --theme-primary-900: #6b1e1e;
+
+  --theme-secondary: #d9a316;
+  --theme-accent: #c22a2a;
+
+  /* Colores de fondo */
+  --theme-bg-primary: #FFFFFF;
+  --theme-bg-secondary: #F8FAFC;
+  --theme-bg-tertiary: #F1F5F9;
+  --theme-bg-card: #FFFFFF;
+
+  /* Colores de texto */
+  --theme-text-primary: #1E293B;
+  --theme-text-secondary: #64748B;
+  --theme-text-tertiary: #94A3B8;
+  --theme-text-accent: var(--theme-primary-600);
+
+  /* Colores de iconos */
+  --theme-icon-primary: var(--theme-primary-600);
+  --theme-icon-secondary: #64748B;
+  --theme-icon-tertiary: #94A3B8;
+  --theme-icon-interactive: var(--theme-primary-500);
+  --theme-icon-hover: var(--theme-primary-700);
+
+  /* Colores de bordes */
+  --theme-border-primary: #E2E8F0;
+  --theme-border-secondary: #CBD5E1;
+  --theme-border-accent: var(--theme-primary-300);
+
+  /* Colores interactivos */
+  --theme-hover-bg: var(--theme-primary-50);
+  --theme-hover-text: var(--theme-primary-700);
+  --theme-active-bg: var(--theme-primary-100);
+  --theme-active-text: var(--theme-primary-800);
+
+  /* Estados */
+  --theme-success: #10B981;
+  --theme-success-bg: #DCFCE7;
+  --theme-success-text: #166534;
+  --theme-warning: #F59E0B;
+  --theme-warning-bg: #FEF3C7;
+  --theme-warning-text: #92400E;
+  --theme-error: #EF4444;
+  --theme-error-bg: #FEE2E2;
+  --theme-error-text: #991B1B;
+  --theme-info: #3B82F6;
+  --theme-info-bg: #DBEAFE;
+  --theme-info-text: #1E40AF;
 }
+
+/* ============================================================
+   MODO OSCURO
+   ============================================================ */
+
+[data-theme="dark"],
+.dark {
+  /* Fondos oscuros */
+  --theme-bg-primary: #0F172A;
+  --theme-bg-secondary: #1E293B;
+  --theme-bg-tertiary: #334155;
+  --theme-bg-card: #1E293B;
+
+  /* Textos con mejor contraste */
+  --theme-text-primary: #F8FAFC;
+  --theme-text-secondary: #CBD5E1;
+  --theme-text-tertiary: #94A3B8;
+  --theme-text-accent: var(--theme-primary-400);
+
+  /* Iconos adaptados para modo oscuro */
+  --theme-icon-primary: var(--theme-primary-400);
+  --theme-icon-secondary: #CBD5E1;
+  --theme-icon-tertiary: #94A3B8;
+  --theme-icon-interactive: var(--theme-primary-300);
+  --theme-icon-hover: var(--theme-primary-200);
+
+  /* Bordes oscuros */
+  --theme-border-primary: #475569;
+  --theme-border-secondary: #64748B;
+  --theme-border-accent: var(--theme-primary-500);
+
+  /* Interacciones en modo oscuro */
+  --theme-hover-bg: rgba(154, 31, 31, 0.15);
+  --theme-hover-text: var(--theme-primary-300);
+  --theme-active-bg: rgba(154, 31, 31, 0.25);
+  --theme-active-text: var(--theme-primary-200);
+
+  /* Estados en modo oscuro */
+  --theme-success-bg: rgba(16, 185, 129, 0.2);
+  --theme-success-text: #34D399;
+  --theme-warning-bg: rgba(245, 158, 11, 0.2);
+  --theme-warning-text: #FBBF24;
+  --theme-error-bg: rgba(239, 68, 68, 0.2);
+  --theme-error-text: #F87171;
+  --theme-info-bg: rgba(59, 130, 246, 0.2);
+  --theme-info-text: #60A5FA;
+}
+
+/* ============================================================
+   ESTILOS BASE
+   ============================================================ */
 
 body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
+  background-color: var(--theme-bg-primary);
+  color: var(--theme-text-primary);
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 #root {
   min-height: 100vh;
 }
 
-/* Scrollbar personalizado */
+/* ============================================================
+   CLASES UTILITARIAS DE TEMA
+   ============================================================ */
+
+/* Fondos */
+.theme-bg-primary { background-color: var(--theme-bg-primary); }
+.theme-bg-secondary { background-color: var(--theme-bg-secondary); }
+.theme-bg-tertiary { background-color: var(--theme-bg-tertiary); }
+.theme-bg-card { background-color: var(--theme-bg-card); }
+
+/* Textos */
+.theme-text-primary { color: var(--theme-text-primary); }
+.theme-text-secondary { color: var(--theme-text-secondary); }
+.theme-text-tertiary { color: var(--theme-text-tertiary); }
+.theme-text-accent { color: var(--theme-text-accent); }
+
+/* Iconos */
+.theme-icon-primary { color: var(--theme-icon-primary); }
+.theme-icon-secondary { color: var(--theme-icon-secondary); }
+.theme-icon-tertiary { color: var(--theme-icon-tertiary); }
+.theme-icon-interactive { color: var(--theme-icon-interactive); }
+
+/* Bordes */
+.theme-border-primary { border-color: var(--theme-border-primary); }
+.theme-border-secondary { border-color: var(--theme-border-secondary); }
+.theme-border-accent { border-color: var(--theme-border-accent); }
+
+/* Primarios */
+.theme-primary { background-color: var(--theme-primary); }
+.theme-primary-soft { background-color: var(--theme-primary-50); }
+
+/* Estados interactivos */
+.theme-hover:hover {
+  background-color: var(--theme-hover-bg);
+  color: var(--theme-hover-text);
+}
+
+/* Botones */
+.theme-button-primary {
+  background-color: var(--theme-primary);
+  color: white;
+}
+
+.theme-button-primary:hover {
+  filter: brightness(0.9);
+}
+
+.theme-button-secondary {
+  background-color: var(--theme-bg-secondary);
+  color: var(--theme-text-primary);
+  border: 1px solid var(--theme-border-primary);
+}
+
+/* Estados de UI */
+.theme-success {
+  background-color: var(--theme-success-bg);
+  color: var(--theme-success-text);
+}
+
+.theme-warning {
+  background-color: var(--theme-warning-bg);
+  color: var(--theme-warning-text);
+}
+
+.theme-error {
+  background-color: var(--theme-error-bg);
+  color: var(--theme-error-text);
+}
+
+.theme-info {
+  background-color: var(--theme-info-bg);
+  color: var(--theme-info-text);
+}
+
+/* ============================================================
+   OVERRIDES PARA MODO OSCURO
+   ============================================================ */
+
+[data-theme="dark"] .bg-white,
+.dark .bg-white {
+  background-color: var(--theme-bg-secondary) !important;
+}
+
+[data-theme="dark"] .bg-gray-50,
+.dark .bg-gray-50 {
+  background-color: #1E293B !important;
+}
+
+[data-theme="dark"] .bg-gray-100,
+.dark .bg-gray-100 {
+  background-color: #334155 !important;
+}
+
+[data-theme="dark"] .text-gray-900,
+.dark .text-gray-900 {
+  color: var(--theme-text-primary) !important;
+}
+
+[data-theme="dark"] .text-gray-700,
+.dark .text-gray-700 {
+  color: var(--theme-text-secondary) !important;
+}
+
+[data-theme="dark"] .border-gray-200,
+.dark .border-gray-200 {
+  border-color: #475569 !important;
+}
+
+[data-theme="dark"] input,
+[data-theme="dark"] select,
+[data-theme="dark"] textarea,
+.dark input,
+.dark select,
+.dark textarea {
+  background-color: var(--theme-bg-secondary) !important;
+  border-color: #475569 !important;
+  color: var(--theme-text-primary) !important;
+}
+
+/* ============================================================
+   TRANSICIONES SUAVES
+   ============================================================ */
+
+* {
+  transition-property: background-color, border-color, color;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 150ms;
+}
+
+/* Deshabilitar transiciones si es necesario */
+.no-theme-transitions * {
+  transition: none !important;
+}
+
+/* ============================================================
+   SCROLLBAR PERSONALIZADO
+   ============================================================ */
+
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #f1f1f1;
+  background: var(--theme-bg-secondary);
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #c1c1c1;
+  background: var(--theme-border-secondary);
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #a1a1a1;
+  background: var(--theme-text-tertiary);
 }
 
-/* Animaciones */
+/* ============================================================
+   ANIMACIONES
+   ============================================================ */
+
 .animate-fade-in {
   animation: fadeIn 0.3s ease-in-out;
 }
@@ -54,7 +313,10 @@ body {
   to { opacity: 1; transform: translateY(0); }
 }
 
-/* Semáforo de documentos */
+/* ============================================================
+   SEMAFORO DE DOCUMENTOS
+   ============================================================ */
+
 .semaforo-verde {
   background-color: rgb(34 197 94);
   color: white;
@@ -68,10 +330,13 @@ body {
   color: white;
 }
 
-/* Loading skeleton */
+/* ============================================================
+   LOADING SKELETON
+   ============================================================ */
+
 .skeleton {
   animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-  background-color: rgb(229 231 235);
+  background-color: var(--theme-bg-tertiary);
   border-radius: 0.25rem;
 }
 
