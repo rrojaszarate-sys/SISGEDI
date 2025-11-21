@@ -58,7 +58,7 @@ export default function LoginPage() {
             <Shield size={28} style={{ color: 'var(--theme-secondary, #d9a316)' }} />
             <div>
               <h1 className="text-lg font-bold tracking-wide">GOBIERNO DEL ESTADO</h1>
-              <p className="text-xs opacity-70">Sistema de Gestion Documental</p>
+              <p className="text-xs opacity-70">Gestion Documental Inteligente</p>
             </div>
           </div>
           <div className="text-right hidden sm:block">

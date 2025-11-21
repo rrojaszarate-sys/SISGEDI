@@ -95,7 +95,7 @@ export default function MainLayout() {
             </div>
             <div className="hidden sm:block">
               <span className="font-bold text-xl text-white">SISGEDI</span>
-              <p className="text-xs text-white opacity-60">Gestion Documental</p>
+              <p className="text-xs text-white opacity-60">Gestion Documental Inteligente</p>
             </div>
           </div>
         </NavbarBrand>
@@ -312,7 +312,7 @@ export default function MainLayout() {
               >
                 SISGEDI v2.0
               </p>
-              <p className="text-xs text-gray-400">Gestion Documental</p>
+              <p className="text-xs text-gray-400">Gestion Documental Inteligente</p>
             </div>
           </div>
         </aside>
