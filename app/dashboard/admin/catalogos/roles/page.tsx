@@ -274,22 +274,22 @@ export default function RolesPage() {
           data={roles}
           columns={columns}
           keyExtractor={(item) => item.id_rol}
-          isLoading={isLoading}
+          loading={isLoading}
           emptyMessage="No hay roles registrados"
-          actions={(item) => (
-            <>
-              <Button size="sm" variant="ghost" onClick={() => openEditModal(item)}>
-                <Edit className="h-4 w-4" />
-              </Button>
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={() => openDeleteModal(item)}
-              >
-                <Trash2 className="h-4 w-4 text-red-600" />
-              </Button>
-            </>
-          )}
+          actions={[
+            {
+              label: 'Editar',
+              icon: <Edit className="h-4 w-4" />,
+              onClick: openEditModal,
+              variant: 'ghost' as const
+            },
+            {
+              label: 'Eliminar',
+              icon: <Trash2 className="h-4 w-4 text-red-600" />,
+              onClick: openDeleteModal,
+              variant: 'ghost' as const
+            }
+          ]}
         />
 
         <Modal

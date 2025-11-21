@@ -151,8 +151,8 @@ export default function ReportesPage() {
       const { data: atendidos } = await supabase
         .from('tbl_documento_entrante')
         .select(`
-          estatus_documento,
-          cat_valores_catalogo!tbl_documento_entrante_estatus_documento_fkey(valor)
+          estatus_general,
+          cat_valores_catalogo!tbl_documento_entrante_estatus_general_fkey(valor)
         `)
         .gte('fecha_recepcion', fechaInicio || '2024-01-01')
         .lte('fecha_recepcion', fechaFin || new Date().toISOString())

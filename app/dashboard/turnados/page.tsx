@@ -67,17 +67,17 @@ export default function TurnadosPage() {
 
   // Form data
   const [formData, setFormData] = useState<FormData>({
-    id_documento: 0,
-    id_ua_origen: 0,
-    id_ua_destino: 0,
-    id_usuario_destino: null,
-    instrucciones: null,
-    plazo_atencion: null,
-    estatus_turnado: 0,
-    fecha_recepcion: null,
-    fecha_atencion: null,
-    respuesta: null,
-    observaciones: null
+    id_doc_entrante: '',
+    id_ua_origen: '',
+    id_usuario_turno: null,
+    id_ua_destino: '',
+    instruccion: '',
+    dias_atencion: 3,
+    fecha_vencimiento: '',
+    porcentaje_avance: null,
+    estatus_turnado: '',
+    revisado: null,
+    observacion_rechazo: ''
   })
 
   useEffect(() => {
@@ -117,7 +117,7 @@ export default function TurnadosPage() {
         .from('tbl_turnado')
         .select(`
           *,
-          tbl_documento_entrante!tbl_turnado_id_documento_fkey(
+          tbl_documento_entrante!tbl_turnado_id_doc_entrante_fkey(
             folio_interno,
             asunto,
             cat_valores_catalogo_prioridad:cat_valores_catalogo!tbl_documento_entrante_id_prioridad_fkey(valor)
@@ -125,7 +125,7 @@ export default function TurnadosPage() {
           cat_unidad_administrativa_origen:cat_unidad_administrativa!tbl_turnado_id_ua_origen_fkey(nombre_ua),
           cat_unidad_administrativa_destino:cat_unidad_administrativa!tbl_turnado_id_ua_destino_fkey(nombre_ua),
           tbl_usuarios_turna:tbl_usuarios!tbl_turnado_id_usuario_turna_fkey(nombre_completo),
-          tbl_usuarios_recibe:tbl_usuarios!tbl_turnado_id_usuario_destino_fkey(nombre_completo),
+          tbl_usuarios_recibe:tbl_usuarios!tbl_turnado_id_usuario_turno_fkey(nombre_completo),
           cat_valores_catalogo_estatus:cat_valores_catalogo!tbl_turnado_estatus_turnado_fkey(valor)
         `)
         .order('fecha_turnado', { ascending: false })
@@ -148,8 +148,8 @@ export default function TurnadosPage() {
       // Cargar documentos disponibles para turnar
       const { data: docsData } = await supabase
         .from('tbl_documento_entrante')
-        .select('id_documento, folio_interno, asunto, id_ua_destinataria')
-        .in('estatus_documento', [
+        .select('id_doc_entrante, folio_interno, asunto, id_ua_destinataria')
+        .in('estatus_general', [
           // Solo documentos que pueden turnarse
           (await supabase.from('cat_valores_catalogo').select('id_valor_catalogo').eq('valor', 'Recibido').single()).data?.id_valor_catalogo,
           (await supabase.from('cat_valores_catalogo').select('id_valor_catalogo').eq('valor', 'En Proceso').single()).data?.id_valor_catalogo
@@ -209,13 +209,13 @@ export default function TurnadosPage() {
       filtered = filtered.filter(t =>
         t.tbl_documento_entrante?.folio_interno.toLowerCase().includes(search) ||
         t.tbl_documento_entrante?.asunto.toLowerCase().includes(search) ||
-        t.instrucciones?.toLowerCase().includes(search)
+        t.instruccion?.toLowerCase().includes(search)
       )
     }
 
     // Filtro por estatus
     if (filterEstatus) {
-      filtered = filtered.filter(t => t.estatus_turnado === parseInt(filterEstatus))
+      filtered = filtered.filter(t => t.estatus_turnado === filterEstatus)
     }
 
     setFilteredTurnados(filtered)
@@ -261,17 +261,17 @@ export default function TurnadosPage() {
   function handleNew() {
     setSelectedTurnado(null)
     setFormData({
-      id_documento: 0,
-      id_ua_origen: currentUser?.id_ua || 0,
-      id_ua_destino: 0,
-      id_usuario_destino: null,
-      instrucciones: null,
-      plazo_atencion: null,
-      estatus_turnado: estatus.find(e => e.valor === 'Pendiente')?.id_valor_catalogo || 0,
-      fecha_recepcion: null,
-      fecha_atencion: null,
-      respuesta: null,
-      observaciones: null
+      id_doc_entrante: '',
+      id_ua_origen: currentUser?.id_ua || '',
+      id_usuario_turno: null,
+      id_ua_destino: '',
+      instruccion: '',
+      dias_atencion: 3,
+      fecha_vencimiento: '',
+      porcentaje_avance: null,
+      estatus_turnado: estatus.find(e => e.valor === 'Pendiente')?.valor || '',
+      revisado: null,
+      observacion_rechazo: ''
     })
     setShowModal(true)
   }
@@ -279,17 +279,17 @@ export default function TurnadosPage() {
   function handleView(turnado: Turnado) {
     setSelectedTurnado(turnado)
     setFormData({
-      id_documento: turnado.id_documento,
+      id_doc_entrante: turnado.id_doc_entrante || '',
       id_ua_origen: turnado.id_ua_origen,
+      id_usuario_turno: turnado.id_usuario_turno,
       id_ua_destino: turnado.id_ua_destino,
-      id_usuario_destino: turnado.id_usuario_destino,
-      instrucciones: turnado.instrucciones,
-      plazo_atencion: turnado.plazo_atencion,
-      estatus_turnado: turnado.estatus_turnado,
-      fecha_recepcion: turnado.fecha_recepcion,
-      fecha_atencion: turnado.fecha_atencion,
-      respuesta: turnado.respuesta,
-      observaciones: turnado.observaciones
+      instruccion: turnado.instruccion,
+      dias_atencion: turnado.dias_atencion,
+      fecha_vencimiento: turnado.fecha_vencimiento,
+      porcentaje_avance: turnado.porcentaje_avance,
+      estatus_turnado: turnado.estatus_turnado || '',
+      revisado: turnado.revisado,
+      observacion_rechazo: turnado.observacion_rechazo || ''
     })
     setShowModal(true)
   }
@@ -312,10 +312,7 @@ export default function TurnadosPage() {
           .from('tbl_turnado')
           .update({
             estatus_turnado: formData.estatus_turnado,
-            fecha_recepcion: formData.fecha_recepcion,
-            fecha_atencion: formData.fecha_atencion,
-            respuesta: formData.respuesta,
-            observaciones: formData.observaciones
+            observacion_rechazo: formData.observacion_rechazo
           })
           .eq('id_turnado', selectedTurnado.id_turnado)
 
@@ -386,7 +383,7 @@ export default function TurnadosPage() {
       render: (t: Turnado) => (
         <div className="flex items-center gap-1 text-sm text-gray-600">
           <Calendar className="w-4 h-4" />
-          {new Date(t.fecha_turnado).toLocaleDateString('es-MX')}
+          {t.fecha_turnado ? new Date(t.fecha_turnado).toLocaleDateString('es-MX') : 'N/A'}
         </div>
       )
     },
@@ -394,9 +391,9 @@ export default function TurnadosPage() {
       key: 'plazo',
       label: 'Plazo',
       render: (t: Turnado) => {
-        if (!t.plazo_atencion) return <span className="text-gray-400">Sin plazo</span>
+        if (!t.dias_atencion) return <span className="text-gray-400">Sin plazo</span>
 
-        const plazo = new Date(t.plazo_atencion)
+        const plazo = new Date(t.dias_atencion)
         const hoy = new Date()
         const vencido = plazo < hoy && t.cat_valores_catalogo_estatus?.valor !== 'Atendido'
 
@@ -523,8 +520,8 @@ export default function TurnadosPage() {
           <div className="text-center">
             <div className="text-2xl font-bold text-red-600">
               {turnados.filter(t => {
-                if (!t.plazo_atencion || t.cat_valores_catalogo_estatus?.valor === 'Atendido') return false
-                return new Date(t.plazo_atencion) < new Date()
+                if (!t.dias_atencion || t.cat_valores_catalogo_estatus?.valor === 'Atendido') return false
+                return new Date(t.dias_atencion) < new Date()
               }).length}
             </div>
             <div className="text-sm text-gray-600">Vencidos</div>
@@ -566,14 +563,14 @@ export default function TurnadosPage() {
                       Documento <span className="text-red-500">*</span>
                     </label>
                     <select
-                      value={formData.id_documento}
-                      onChange={(e) => setFormData({ ...formData, id_documento: parseInt(e.target.value) })}
+                      value={formData.id_doc_entrante || ''}
+                      onChange={(e) => setFormData({ ...formData, id_doc_entrante: e.target.value })}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                       required
                     >
                       <option value="">Seleccionar documento...</option>
                       {documentos.map(doc => (
-                        <option key={doc.id_documento} value={doc.id_documento}>
+                        <option key={doc.id_doc_entrante} value={doc.id_doc_entrante}>
                           {doc.folio_interno} - {doc.asunto.substring(0, 50)}...
                         </option>
                       ))}
@@ -588,8 +585,7 @@ export default function TurnadosPage() {
                     <select
                       value={formData.id_ua_destino}
                       onChange={(e) => {
-                        const uaId = parseInt(e.target.value)
-                        setFormData({ ...formData, id_ua_destino: uaId, id_usuario_destino: null })
+                        setFormData({ ...formData, id_ua_destino: e.target.value, id_usuario_turno: null })
                       }}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                       required
@@ -604,14 +600,14 @@ export default function TurnadosPage() {
                   </div>
 
                   {/* Usuario Destino (opcional) */}
-                  {formData.id_ua_destino > 0 && (
+                  {formData.id_ua_destino && (
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
                         Usuario Específico (Opcional)
                       </label>
                       <select
-                        value={formData.id_usuario_destino || ''}
-                        onChange={(e) => setFormData({ ...formData, id_usuario_destino: e.target.value || null })}
+                        value={formData.id_usuario_turno || ''}
+                        onChange={(e) => setFormData({ ...formData, id_usuario_turno: e.target.value })}
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                       >
                         <option value="">Cualquier usuario de la UA</option>
@@ -630,8 +626,8 @@ export default function TurnadosPage() {
                       Instrucciones <span className="text-red-500">*</span>
                     </label>
                     <textarea
-                      value={formData.instrucciones || ''}
-                      onChange={(e) => setFormData({ ...formData, instrucciones: e.target.value || null })}
+                      value={formData.instruccion || ''}
+                      onChange={(e) => setFormData({ ...formData, instruccion: e.target.value })}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                       rows={3}
                       required
@@ -644,8 +640,8 @@ export default function TurnadosPage() {
                     <Input
                       type="date"
                       label="Plazo de Atención"
-                      value={formData.plazo_atencion || ''}
-                      onChange={(e) => setFormData({ ...formData, plazo_atencion: e.target.value || null })}
+                      value={formData.dias_atencion || ''}
+                      onChange={(e) => setFormData({ ...formData, dias_atencion: parseInt(e.target.value) || 0 })}
                       min={new Date().toISOString().split('T')[0]}
                     />
                   </div>
@@ -670,13 +666,13 @@ export default function TurnadosPage() {
                     </div>
                     <div>
                       <label className="text-xs font-medium text-gray-500">Instrucciones</label>
-                      <p className="text-gray-900">{selectedTurnado.instrucciones}</p>
+                      <p className="text-gray-900">{selectedTurnado.instruccion}</p>
                     </div>
-                    {selectedTurnado.plazo_atencion && (
+                    {selectedTurnado.dias_atencion && (
                       <div>
                         <label className="text-xs font-medium text-gray-500">Plazo</label>
                         <p className="text-gray-900">
-                          {new Date(selectedTurnado.plazo_atencion).toLocaleDateString('es-MX')}
+                          {new Date(selectedTurnado.dias_atencion).toLocaleDateString('es-MX')}
                         </p>
                       </div>
                     )}
@@ -688,52 +684,19 @@ export default function TurnadosPage() {
                       Estatus <span className="text-red-500">*</span>
                     </label>
                     <select
-                      value={formData.estatus_turnado}
-                      onChange={(e) => setFormData({ ...formData, estatus_turnado: parseInt(e.target.value) })}
+                      value={formData.estatus_turnado || ''}
+                      onChange={(e) => setFormData({ ...formData, estatus_turnado: e.target.value })}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                       required
                     >
                       {estatus.map(e => (
-                        <option key={e.id_valor_catalogo} value={e.id_valor_catalogo}>
+                        <option key={e.id_valor_catalogo} value={e.valor}>
                           {e.valor}
                         </option>
                       ))}
                     </select>
                   </div>
 
-                  {/* Fecha Recepción */}
-                  <div>
-                    <Input
-                      type="datetime-local"
-                      label="Fecha de Recepción"
-                      value={formData.fecha_recepcion || ''}
-                      onChange={(e) => setFormData({ ...formData, fecha_recepcion: e.target.value || null })}
-                    />
-                  </div>
-
-                  {/* Fecha Atención */}
-                  <div>
-                    <Input
-                      type="datetime-local"
-                      label="Fecha de Atención"
-                      value={formData.fecha_atencion || ''}
-                      onChange={(e) => setFormData({ ...formData, fecha_atencion: e.target.value || null })}
-                    />
-                  </div>
-
-                  {/* Respuesta */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Respuesta
-                    </label>
-                    <textarea
-                      value={formData.respuesta || ''}
-                      onChange={(e) => setFormData({ ...formData, respuesta: e.target.value || null })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      rows={3}
-                      placeholder="Respuesta o resultado de la atención"
-                    />
-                  </div>
 
                   {/* Observaciones */}
                   <div>
@@ -741,8 +704,8 @@ export default function TurnadosPage() {
                       Observaciones
                     </label>
                     <textarea
-                      value={formData.observaciones || ''}
-                      onChange={(e) => setFormData({ ...formData, observaciones: e.target.value || null })}
+                      value={formData.observacion_rechazo || ''}
+                      onChange={(e) => setFormData({ ...formData, observacion_rechazo: e.target.value })}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                       rows={2}
                       placeholder="Observaciones adicionales"

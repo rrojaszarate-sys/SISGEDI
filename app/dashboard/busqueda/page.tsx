@@ -73,11 +73,11 @@ export default function BusquedaGlobalPage() {
             asunto,
             remitente_nombre,
             fecha_recepcion,
-            texto_ocr,
+            contenido_ocr,
             cat_valores_catalogo_prioridad:cat_valores_catalogo!tbl_documento_entrante_id_prioridad_fkey(valor)
           `)
           .or(searchInOCR
-            ? `folio_interno.ilike.%${searchTerm}%,asunto.ilike.%${searchTerm}%,remitente_nombre.ilike.%${searchTerm}%,texto_ocr.ilike.%${searchTerm}%`
+            ? `folio_interno.ilike.%${searchTerm}%,asunto.ilike.%${searchTerm}%,remitente_nombre.ilike.%${searchTerm}%,contenido_ocr.ilike.%${searchTerm}%`
             : `folio_interno.ilike.%${searchTerm}%,asunto.ilike.%${searchTerm}%,remitente_nombre.ilike.%${searchTerm}%`
           )
           .limit(100)
@@ -93,7 +93,7 @@ export default function BusquedaGlobalPage() {
             metadata: {
               remitente: doc.remitente_nombre,
               prioridad: (doc.cat_valores_catalogo_prioridad as any)?.valor,
-              tieneOCR: !!doc.texto_ocr
+              tieneOCR: !!doc.contenido_ocr
             }
           })))
         }

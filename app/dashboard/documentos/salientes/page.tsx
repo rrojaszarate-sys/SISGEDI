@@ -42,8 +42,8 @@ type DocumentoSaliente = {
   numero_anexos: number
   medio_envio: string | null
   numero_guia: string | null
-  archivo_url: string | null
-  archivo_nombre: string | null
+  storage_path: string | null
+  nombre_archivo: string | null
   acuse_url: string | null
   observaciones: string | null
   cat_unidad_administrativa?: { nombre_ua: string }
@@ -59,7 +59,7 @@ type FormData = {
   fecha_elaboracion: string
   fecha_envio: string | null
   id_prioridad: number
-  id_tipo_documento: number
+  id_tipo_doc: number
   destinatario_nombre: string
   destinatario_cargo: string | null
   destinatario_institucion: string | null
@@ -70,8 +70,8 @@ type FormData = {
   medio_envio: string | null
   numero_guia: string | null
   estatus_envio: number
-  archivo_url: string | null
-  archivo_nombre: string | null
+  storage_path: string | null
+  nombre_archivo: string | null
   acuse_url: string | null
   observaciones: string | null
 }
@@ -106,7 +106,7 @@ export default function DocumentosSalientesPage() {
     fecha_elaboracion: new Date().toISOString().split('T')[0],
     fecha_envio: null,
     id_prioridad: 0,
-    id_tipo_documento: 0,
+    id_tipo_doc: 0,
     destinatario_nombre: '',
     destinatario_cargo: null,
     destinatario_institucion: null,
@@ -117,8 +117,8 @@ export default function DocumentosSalientesPage() {
     medio_envio: null,
     numero_guia: null,
     estatus_envio: 0,
-    archivo_url: null,
-    archivo_nombre: null,
+    storage_path: null,
+    nombre_archivo: null,
     acuse_url: null,
     observaciones: null
   })
@@ -168,7 +168,7 @@ export default function DocumentosSalientesPage() {
           cat_unidad_administrativa!tbl_documento_saliente_id_ua_remitente_fkey(nombre_ua),
           tbl_usuarios_elabora:tbl_usuarios!tbl_documento_saliente_id_usuario_elabora_fkey(nombre_completo),
           cat_valores_catalogo_prioridad:cat_valores_catalogo!tbl_documento_saliente_id_prioridad_fkey(valor),
-          cat_valores_catalogo_tipo:cat_valores_catalogo!tbl_documento_saliente_id_tipo_documento_fkey(valor),
+          cat_valores_catalogo_tipo:cat_valores_catalogo!tbl_documento_saliente_id_tipo_doc_fkey(valor),
           cat_valores_catalogo_estatus:cat_valores_catalogo!tbl_documento_saliente_estatus_envio_fkey(valor)
         `)
         .order('fecha_elaboracion', { ascending: false })
@@ -305,7 +305,7 @@ export default function DocumentosSalientesPage() {
       fecha_elaboracion: new Date().toISOString().split('T')[0],
       fecha_envio: null,
       id_prioridad: prioridades.find(p => p.valor === 'Media')?.id_valor_catalogo || 0,
-      id_tipo_documento: tiposDoc[0]?.id_valor_catalogo || 0,
+      id_tipo_doc: tiposDoc[0]?.id_valor_catalogo || 0,
       destinatario_nombre: '',
       destinatario_cargo: null,
       destinatario_institucion: null,
@@ -316,8 +316,8 @@ export default function DocumentosSalientesPage() {
       medio_envio: null,
       numero_guia: null,
       estatus_envio: estatusEnvio.find(e => e.valor === 'Elaborado')?.id_valor_catalogo || 0,
-      archivo_url: null,
-      archivo_nombre: null,
+      storage_path: null,
+      nombre_archivo: null,
       acuse_url: null,
       observaciones: null
     })
@@ -336,8 +336,8 @@ export default function DocumentosSalientesPage() {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) throw new Error('No hay sesión activa')
 
-      let fileUrl = formData.archivo_url
-      let fileName = formData.archivo_nombre
+      let fileUrl = formData.storage_path
+      let fileName = formData.nombre_archivo
       let acuseUrl = formData.acuse_url
 
       // Upload archivo principal
@@ -355,8 +355,8 @@ export default function DocumentosSalientesPage() {
 
       const documentData = {
         ...formData,
-        archivo_url: fileUrl,
-        archivo_nombre: fileName,
+        storage_path: fileUrl,
+        nombre_archivo: fileName,
         acuse_url: acuseUrl,
         id_usuario_elabora: user.id,
         id_usuario_registro: user.id
@@ -478,7 +478,7 @@ export default function DocumentosSalientesPage() {
           fecha_elaboracion: doc.fecha_elaboracion,
           fecha_envio: doc.fecha_envio,
           id_prioridad: (doc.cat_valores_catalogo_prioridad as any)?.id_valor_catalogo || 0,
-          id_tipo_documento: (doc.cat_valores_catalogo_tipo as any)?.id_valor_catalogo || 0,
+          id_tipo_doc: (doc.cat_valores_catalogo_tipo as any)?.id_valor_catalogo || 0,
           destinatario_nombre: doc.destinatario_nombre,
           destinatario_cargo: doc.destinatario_cargo,
           destinatario_institucion: doc.destinatario_institucion,
@@ -489,8 +489,8 @@ export default function DocumentosSalientesPage() {
           medio_envio: doc.medio_envio,
           numero_guia: doc.numero_guia,
           estatus_envio: (doc.cat_valores_catalogo_estatus as any)?.id_valor_catalogo || 0,
-          archivo_url: doc.archivo_url,
-          archivo_nombre: doc.archivo_nombre,
+          storage_path: doc.storage_path,
+          nombre_archivo: doc.nombre_archivo,
           acuse_url: doc.acuse_url,
           observaciones: doc.observaciones
         })
@@ -607,8 +607,8 @@ export default function DocumentosSalientesPage() {
                   Tipo de Documento <span className="text-red-500">*</span>
                 </label>
                 <select
-                  value={formData.id_tipo_documento}
-                  onChange={(e) => setFormData({ ...formData, id_tipo_documento: parseInt(e.target.value) })}
+                  value={formData.id_tipo_doc}
+                  onChange={(e) => setFormData({ ...formData, id_tipo_doc: parseInt(e.target.value) })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                   required
                 >

@@ -6,8 +6,9 @@
 'use client'
 
 import { clsx } from 'clsx'
+import React from 'react'
 
-interface Column<T> {
+export interface Column<T> {
   key: keyof T | string
   label: string
   render?: (item: T) => React.ReactNode
@@ -15,26 +16,34 @@ interface Column<T> {
   className?: string
 }
 
+export interface Action<T> {
+  label: string
+  icon?: React.ReactNode
+  onClick: (item: T) => void
+  variant?: 'default' | 'ghost' | 'danger'
+  disabled?: (item: T) => boolean
+}
+
 interface TableProps<T> {
   data: T[]
   columns: Column<T>[]
-  keyExtractor: (item: T) => string | number
+  keyExtractor?: (item: T) => string | number
   onRowClick?: (item: T) => void
-  actions?: (item: T) => React.ReactNode
+  actions?: Action<T>[]
   emptyMessage?: string
-  isLoading?: boolean
+  loading?: boolean
 }
 
-export function Table<T>({
+export function Table<T extends Record<string, any>>({
   data,
   columns,
-  keyExtractor,
+  keyExtractor = (item: T) => (item.id_doc_entrante || item.id || item.id_item || item.id_valor || item.id_rol || item.id_ua || String(Math.random())),
   onRowClick,
   actions,
   emptyMessage = 'No hay datos para mostrar',
-  isLoading = false,
+  loading = false,
 }: TableProps<T>) {
-  if (isLoading) {
+  if (loading) {
     return (
       <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
         <div className="animate-pulse">
@@ -73,7 +82,7 @@ export function Table<T>({
                   {column.label}
                 </th>
               ))}
-              {actions && (
+              {actions && actions.length > 0 && (
                 <th
                   scope="col"
                   className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider"
@@ -106,10 +115,37 @@ export function Table<T>({
                       : String((item as any)[column.key] ?? '')}
                   </td>
                 ))}
-                {actions && (
+                {actions && actions.length > 0 && (
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                     <div className="flex items-center justify-end space-x-2">
-                      {actions(item)}
+                      {actions.map((action, actionIndex) => {
+                        const isDisabled = action.disabled?.(item) || false
+                        return (
+                          <button
+                            key={actionIndex}
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              if (!isDisabled) {
+                                action.onClick(item)
+                              }
+                            }}
+                            disabled={isDisabled}
+                            className={clsx(
+                              'inline-flex items-center gap-1 px-3 py-1.5 rounded-md text-sm font-medium transition-colors',
+                              {
+                                'text-gray-700 hover:bg-gray-100': action.variant === 'ghost' && !isDisabled,
+                                'text-red-700 hover:bg-red-50': action.variant === 'danger' && !isDisabled,
+                                'text-blue-700 hover:bg-blue-50': action.variant === 'default' && !isDisabled,
+                                'text-gray-400 cursor-not-allowed': isDisabled,
+                              }
+                            )}
+                            title={action.label}
+                          >
+                            {action.icon}
+                            <span className="sr-only">{action.label}</span>
+                          </button>
+                        )
+                      })}
                     </div>
                   </td>
                 )}

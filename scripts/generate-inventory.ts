@@ -268,18 +268,15 @@ async function generarInventarioUA(
     let modelo = undefined;
     let serie = undefined;
 
-    if (item.marca) {
+    if (true) {
       const marcas = MARCAS_POR_CATEGORIA[categoria as keyof typeof MARCAS_POR_CATEGORIA] || ['Genérica'];
       marca = faker.helpers.arrayElement(marcas);
     }
 
-    if (item.modelo && marca) {
+    if (marca) {
       modelo = generarModelo(categoria, marca);
     }
 
-    if (item.serie) {
-      serie = generarSerie();
-    }
 
     const observaciones = faker.datatype.boolean({ probability: 0.3 })
       ? faker.helpers.arrayElement([

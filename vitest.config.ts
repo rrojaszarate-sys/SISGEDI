@@ -15,10 +15,12 @@ export default defineConfig({
         'tests/**/*.test.ts'
       ],
       all: true,
-      lines: 70,
-      functions: 70,
-      branches: 70,
-      statements: 70
+      thresholds: {
+        lines: 70,
+        functions: 70,
+        branches: 70,
+        statements: 70
+      }
     },
     testTimeout: 30000,
     hookTimeout: 30000,

@@ -266,28 +266,24 @@ export default function CatalogosValoresPage() {
           data={filteredValores}
           columns={columns}
           keyExtractor={(item) => item.id_valor_catalogo}
-          isLoading={isLoading}
+          loading={isLoading}
           emptyMessage="No hay catálogos registrados"
-          actions={(item) => (
-            <>
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={() => openEditModal(item)}
-                disabled={!item.es_modificable}
-              >
-                <Edit className="h-4 w-4" />
-              </Button>
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={() => openDeleteModal(item)}
-                disabled={!item.es_modificable}
-              >
-                <Trash2 className="h-4 w-4 text-red-600" />
-              </Button>
-            </>
-          )}
+          actions={[
+            {
+              label: 'Editar',
+              icon: <Edit className="h-4 w-4" />,
+              onClick: openEditModal,
+              variant: 'ghost' as const,
+              disabled: (item) => !item.es_modificable
+            },
+            {
+              label: 'Eliminar',
+              icon: <Trash2 className="h-4 w-4 text-red-600" />,
+              onClick: openDeleteModal,
+              variant: 'ghost' as const,
+              disabled: (item) => !item.es_modificable
+            }
+          ]}
         />
 
         {/* Modal de Crear/Editar */}

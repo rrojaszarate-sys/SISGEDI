@@ -64,25 +64,27 @@ export default function InventarioPage() {
 
   // Form data
   const [formData, setFormData] = useState<FormData>({
-    numero_inventario: '',
+    categoria: '',
+    subcategoria: '',
     descripcion: '',
-    marca: null,
-    modelo: null,
-    numero_serie: null,
-    id_tipo_bien: 0,
-    estado_conservacion: 0,
-    id_ua_asignada: 0,
-    id_usuario_responsable: null,
-    id_usuario_resguardo: null,
-    ubicacion_fisica: null,
-    fecha_adquisicion: null,
-    valor_adquisicion: null,
-    numero_factura: null,
-    proveedor: null,
-    observaciones: null,
-    foto_url: null,
-    qr_code: null,
-    activo: true
+    marca: '',
+    modelo: '',
+    numero_serie: '',
+    cantidad: 1,
+    unidad: 'Pieza',
+    estado: '',
+    id_ua: '',
+    ubicacion_fisica: '',
+    responsable: '',
+    numero_inventario: '',
+    numero_factura: '',
+    fecha_adquisicion: new Date().toISOString().split('T')[0],
+    valor_unitario: 0,
+    valor_total: 0,
+    proveedor: '',
+    imagen_storage_path: null,
+    bucket_name: null,
+    metadata: null
   })
 
   const [uploadedPhoto, setUploadedPhoto] = useState<File | null>(null)
@@ -105,11 +107,11 @@ export default function InventarioPage() {
         .from('tbl_inventario')
         .select(`
           *,
-          cat_unidad_administrativa!tbl_inventario_id_ua_asignada_fkey(nombre_ua, codigo_ua),
-          tbl_usuarios_responsable:tbl_usuarios!tbl_inventario_id_usuario_responsable_fkey(nombre_completo),
-          tbl_usuarios_resguardo:tbl_usuarios!tbl_inventario_id_usuario_resguardo_fkey(nombre_completo),
-          cat_valores_catalogo_tipo:cat_valores_catalogo!tbl_inventario_id_tipo_bien_fkey(valor),
-          cat_valores_catalogo_estado:cat_valores_catalogo!tbl_inventario_estado_conservacion_fkey(valor)
+          cat_unidad_administrativa!tbl_inventario_id_ua_fkey(nombre_ua, codigo_ua),
+          tbl_usuarios_responsable:tbl_usuarios!tbl_inventario_responsable_fkey(nombre_completo),
+          tbl_usuarios_resguardo:tbl_usuarios!tbl_inventario_responsable_fkey(nombre_completo),
+          cat_valores_catalogo_tipo:cat_valores_catalogo!tbl_inventario_categoria_fkey(valor),
+          cat_valores_catalogo_estado:cat_valores_catalogo!tbl_inventario_estado_fkey(valor)
         `)
         .order('numero_inventario', { ascending: true })
 
@@ -188,17 +190,17 @@ export default function InventarioPage() {
 
     // Filtro por tipo
     if (filterTipo) {
-      filtered = filtered.filter(item => item.id_tipo_bien === parseInt(filterTipo))
+      filtered = filtered.filter(item => item.categoria === filterTipo)
     }
 
     // Filtro por estado
     if (filterEstado) {
-      filtered = filtered.filter(item => item.estado_conservacion === parseInt(filterEstado))
+      filtered = filtered.filter(item => item.estado === filterEstado)
     }
 
     // Filtro por UA
     if (filterUA) {
-      filtered = filtered.filter(item => item.id_ua_asignada === parseInt(filterUA))
+      filtered = filtered.filter(item => item.id_ua === filterUA)
     }
 
     setFilteredItems(filtered)
@@ -218,25 +220,27 @@ export default function InventarioPage() {
   function handleNew() {
     setSelectedItem(null)
     setFormData({
-      numero_inventario: '',
+      categoria: tiposInventario[0]?.valor || '',
+      subcategoria: '',
       descripcion: '',
-      marca: null,
-      modelo: null,
-      numero_serie: null,
-      id_tipo_bien: tiposInventario[0]?.id_valor_catalogo || 0,
-      estado_conservacion: estadosInventario.find(e => e.valor === 'Bueno')?.id_valor_catalogo || 0,
-      id_ua_asignada: 0,
-      id_usuario_responsable: null,
-      id_usuario_resguardo: null,
-      ubicacion_fisica: null,
-      fecha_adquisicion: null,
-      valor_adquisicion: null,
-      numero_factura: null,
-      proveedor: null,
-      observaciones: null,
-      foto_url: null,
-      qr_code: null,
-      activo: true
+      marca: '',
+      modelo: '',
+      numero_serie: '',
+      cantidad: 1,
+      unidad: 'Pieza',
+      estado: estadosInventario.find(e => e.valor === 'Bueno')?.valor || '',
+      id_ua: '',
+      ubicacion_fisica: '',
+      responsable: '',
+      numero_inventario: '',
+      numero_factura: '',
+      fecha_adquisicion: new Date().toISOString().split('T')[0],
+      valor_unitario: 0,
+      valor_total: 0,
+      proveedor: '',
+      imagen_storage_path: null,
+      bucket_name: null,
+      metadata: null
     })
     setUploadedPhoto(null)
     setShowModal(true)
@@ -247,23 +251,25 @@ export default function InventarioPage() {
     setFormData({
       numero_inventario: item.numero_inventario,
       descripcion: item.descripcion,
-      marca: item.marca,
-      modelo: item.modelo,
-      numero_serie: item.numero_serie,
-      id_tipo_bien: item.id_tipo_bien,
-      estado_conservacion: item.estado_conservacion,
-      id_ua_asignada: item.id_ua_asignada,
-      id_usuario_responsable: item.id_usuario_responsable,
-      id_usuario_resguardo: item.id_usuario_resguardo,
+      marca: item.marca || '',
+      modelo: item.modelo || '',
+      numero_serie: item.numero_serie || '',
+      categoria: item.categoria,
+      subcategoria: item.subcategoria || '',
+      cantidad: item.cantidad,
+      unidad: item.unidad,
+      estado: item.estado,
+      id_ua: item.id_ua,
       ubicacion_fisica: item.ubicacion_fisica,
+      responsable: item.responsable,
       fecha_adquisicion: item.fecha_adquisicion,
-      valor_adquisicion: item.valor_adquisicion,
-      numero_factura: item.numero_factura,
-      proveedor: item.proveedor,
-      observaciones: item.observaciones,
-      foto_url: item.foto_url,
-      qr_code: item.qr_code,
-      activo: item.activo
+      valor_unitario: item.valor_unitario,
+      valor_total: item.valor_total,
+      numero_factura: item.numero_factura || '',
+      proveedor: item.proveedor || '',
+      imagen_storage_path: item.imagen_storage_path,
+      bucket_name: item.bucket_name,
+      metadata: item.metadata
     })
     setUploadedPhoto(null)
     setShowModal(true)
@@ -307,8 +313,8 @@ export default function InventarioPage() {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) throw new Error('No hay sesión activa')
 
-      let photoUrl = formData.foto_url
-      let qrCode = formData.qr_code
+      let photoUrl = formData.imagen_storage_path
+      let qrCode = formData.metadata
 
       // Si hay foto nueva, subirla
       if (uploadedPhoto) {
@@ -323,8 +329,8 @@ export default function InventarioPage() {
 
       const itemData = {
         ...formData,
-        foto_url: photoUrl,
-        qr_code: qrCode,
+        imagen_storage_path: photoUrl,
+        metadata: qrCode,
         id_usuario_registro: user.id
       }
 
@@ -385,10 +391,11 @@ export default function InventarioPage() {
   }
 
   async function handleDownloadQR(item: InventarioItem) {
-    if (!item.qr_code) return
+    if (!item.metadata) return
 
     try {
-      window.open(item.qr_code, '_blank')
+      const url = typeof item.metadata === 'string' ? item.metadata : JSON.stringify(item.metadata)
+      window.open(url, '_blank')
     } catch (err: any) {
       setError('Error al descargar código QR')
     }
@@ -455,7 +462,7 @@ export default function InventarioPage() {
       key: 'qr',
       label: 'QR',
       render: (item: InventarioItem) => (
-        item.qr_code ? (
+        item.metadata ? (
           <button
             onClick={() => handleDownloadQR(item)}
             className="text-blue-600 hover:text-blue-800"
@@ -638,14 +645,14 @@ export default function InventarioPage() {
                   Tipo de Bien <span className="text-red-500">*</span>
                 </label>
                 <select
-                  value={formData.id_tipo_bien}
-                  onChange={(e) => setFormData({ ...formData, id_tipo_bien: parseInt(e.target.value) })}
+                  value={formData.categoria || ''}
+                  onChange={(e) => setFormData({ ...formData, categoria: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                   required
                 >
                   <option value="">Seleccionar...</option>
                   {tiposInventario.map(t => (
-                    <option key={t.id_valor_catalogo} value={t.id_valor_catalogo}>
+                    <option key={t.id_valor_catalogo} value={t.valor}>
                       {t.valor}
                     </option>
                   ))}
@@ -671,7 +678,7 @@ export default function InventarioPage() {
               <Input
                 label="Marca"
                 value={formData.marca || ''}
-                onChange={(e) => setFormData({ ...formData, marca: e.target.value || null })}
+                onChange={(e) => setFormData({ ...formData, marca: e.target.value })}
                 placeholder="Ej: HP, Dell, etc."
               />
 
@@ -679,7 +686,7 @@ export default function InventarioPage() {
               <Input
                 label="Modelo"
                 value={formData.modelo || ''}
-                onChange={(e) => setFormData({ ...formData, modelo: e.target.value || null })}
+                onChange={(e) => setFormData({ ...formData, modelo: e.target.value })}
                 placeholder="Ej: Latitude 5520"
               />
 
@@ -687,7 +694,7 @@ export default function InventarioPage() {
               <Input
                 label="Número de Serie"
                 value={formData.numero_serie || ''}
-                onChange={(e) => setFormData({ ...formData, numero_serie: e.target.value || null })}
+                onChange={(e) => setFormData({ ...formData, numero_serie: e.target.value })}
                 placeholder="Serie única del fabricante"
               />
 
@@ -697,14 +704,14 @@ export default function InventarioPage() {
                   Estado de Conservación <span className="text-red-500">*</span>
                 </label>
                 <select
-                  value={formData.estado_conservacion}
-                  onChange={(e) => setFormData({ ...formData, estado_conservacion: parseInt(e.target.value) })}
+                  value={formData.estado || ''}
+                  onChange={(e) => setFormData({ ...formData, estado: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                   required
                 >
                   <option value="">Seleccionar...</option>
                   {estadosInventario.map(e => (
-                    <option key={e.id_valor_catalogo} value={e.id_valor_catalogo}>
+                    <option key={e.id_valor_catalogo} value={e.valor}>
                       {e.valor}
                     </option>
                   ))}
@@ -717,14 +724,12 @@ export default function InventarioPage() {
                   Unidad Administrativa <span className="text-red-500">*</span>
                 </label>
                 <select
-                  value={formData.id_ua_asignada}
+                  value={formData.id_ua || ''}
                   onChange={(e) => {
-                    const uaId = parseInt(e.target.value)
                     setFormData({
                       ...formData,
-                      id_ua_asignada: uaId,
-                      id_usuario_responsable: null,
-                      id_usuario_resguardo: null
+                      id_ua: e.target.value,
+                      responsable: ''
                     })
                   }}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -745,13 +750,13 @@ export default function InventarioPage() {
                   Usuario Responsable
                 </label>
                 <select
-                  value={formData.id_usuario_responsable || ''}
-                  onChange={(e) => setFormData({ ...formData, id_usuario_responsable: e.target.value || null })}
+                  value={formData.responsable || ''}
+                  onChange={(e) => setFormData({ ...formData, responsable: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  disabled={!formData.id_ua_asignada}
+                  disabled={!formData.id_ua}
                 >
                   <option value="">Sin asignar</option>
-                  {usuarios.filter(u => u.id_ua === formData.id_ua_asignada).map(u => (
+                  {usuarios.filter(u => u.id_ua === formData.id_ua).map(u => (
                     <option key={u.id_usuario} value={u.id_usuario}>
                       {u.nombre_completo}
                     </option>
@@ -763,7 +768,7 @@ export default function InventarioPage() {
               <Input
                 label="Ubicación Física"
                 value={formData.ubicacion_fisica || ''}
-                onChange={(e) => setFormData({ ...formData, ubicacion_fisica: e.target.value || null })}
+                onChange={(e) => setFormData({ ...formData, ubicacion_fisica: e.target.value })}
                 placeholder="Ej: Edificio A, Piso 3, Oficina 301"
               />
 
@@ -772,15 +777,15 @@ export default function InventarioPage() {
                 type="date"
                 label="Fecha de Adquisición"
                 value={formData.fecha_adquisicion || ''}
-                onChange={(e) => setFormData({ ...formData, fecha_adquisicion: e.target.value || null })}
+                onChange={(e) => setFormData({ ...formData, fecha_adquisicion: e.target.value })}
               />
 
               {/* Valor de Adquisición */}
               <Input
                 type="number"
                 label="Valor de Adquisición"
-                value={formData.valor_adquisicion?.toString() || ''}
-                onChange={(e) => setFormData({ ...formData, valor_adquisicion: e.target.value ? parseFloat(e.target.value) : null })}
+                value={formData.valor_unitario?.toString() || ''}
+                onChange={(e) => setFormData({ ...formData, valor_unitario: e.target.value ? parseFloat(e.target.value) : 0 })}
                 placeholder="0.00"
                 step="0.01"
               />
@@ -789,7 +794,7 @@ export default function InventarioPage() {
               <Input
                 label="Número de Factura"
                 value={formData.numero_factura || ''}
-                onChange={(e) => setFormData({ ...formData, numero_factura: e.target.value || null })}
+                onChange={(e) => setFormData({ ...formData, numero_factura: e.target.value })}
                 placeholder="Número de factura"
               />
 
@@ -797,24 +802,11 @@ export default function InventarioPage() {
               <Input
                 label="Proveedor"
                 value={formData.proveedor || ''}
-                onChange={(e) => setFormData({ ...formData, proveedor: e.target.value || null })}
+                onChange={(e) => setFormData({ ...formData, proveedor: e.target.value })}
                 placeholder="Nombre del proveedor"
               />
 
               {/* Observaciones */}
-              <div className="col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Observaciones
-                </label>
-                <textarea
-                  value={formData.observaciones || ''}
-                  onChange={(e) => setFormData({ ...formData, observaciones: e.target.value || null })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  rows={2}
-                  placeholder="Observaciones adicionales"
-                />
-              </div>
-
               {/* Upload foto */}
               <div className="col-span-2">
                 <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -829,23 +821,12 @@ export default function InventarioPage() {
                 {uploadedPhoto && (
                   <p className="text-xs text-green-600 mt-1">✓ {uploadedPhoto.name}</p>
                 )}
-                {formData.foto_url && !uploadedPhoto && (
+                {formData.imagen_storage_path && !uploadedPhoto && (
                   <p className="text-xs text-blue-600 mt-1">Foto actual guardada</p>
                 )}
               </div>
 
               {/* Activo */}
-              <div className="col-span-2">
-                <label className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    checked={formData.activo}
-                    onChange={(e) => setFormData({ ...formData, activo: e.target.checked })}
-                    className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                  />
-                  <span className="text-sm font-medium text-gray-700">Activo</span>
-                </label>
-              </div>
             </div>
 
             {/* Footer */}

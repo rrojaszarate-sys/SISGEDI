@@ -53,7 +53,7 @@ export default async function DashboardLayout({
     <div className="flex h-screen bg-gray-50">
       <Sidebar
         userName={userData.nombre_completo}
-        userRole={userData.cat_roles?.nombre_rol || 'Usuario'}
+        userRole={(userData.cat_roles as any)?.nombre_rol || 'Usuario'}
       />
       <main className="flex-1 overflow-y-auto">
         {children}

@@ -38,7 +38,7 @@ type DocumentoEntrante = Database['public']['Tables']['tbl_documento_entrante'][
   cat_valores_catalogo_estatus?: { valor: string }
 }
 
-type FormData = Omit<Database['public']['Tables']['tbl_documento_entrante']['Insert'], 'id_documento' | 'fecha_registro' | 'id_usuario_registro'>
+type FormData = Omit<Database['public']['Tables']['tbl_documento_entrante']['Insert'], 'id_doc_entrante' | 'fecha_registro' | 'id_usuario_registro'>
 
 export default function DocumentosEntrantesPage() {
   const [documentos, setDocumentos] = useState<DocumentoEntrante[]>([])
@@ -69,20 +69,20 @@ export default function DocumentosEntrantesPage() {
     folio_externo: null,
     fecha_recepcion: new Date().toISOString().split('T')[0],
     fecha_documento: null,
-    id_prioridad: 0,
-    id_tipo_documento: 0,
-    id_tipo_atencion: 0,
+    id_prioridad: null,
+    id_tipo_doc: null,
+    id_tipo_asunto: null,
     remitente_nombre: '',
     remitente_cargo: null,
     remitente_institucion: null,
     asunto: '',
     observaciones: null,
-    id_ua_destinataria: 0,
+    id_ua_destinataria: '',
     numero_anexos: 0,
-    estatus_documento: 0,
-    archivo_url: null,
-    archivo_nombre: null,
-    texto_ocr: null,
+    estatus_general: null,
+    storage_path: null,
+    nombre_archivo: null,
+    contenido_ocr: null,
     hash_archivo: null
   })
 
@@ -109,9 +109,9 @@ export default function DocumentosEntrantesPage() {
           cat_unidad_administrativa!tbl_documento_entrante_id_ua_destinataria_fkey(nombre_ua),
           tbl_usuarios_registro:tbl_usuarios!tbl_documento_entrante_id_usuario_registro_fkey(nombre_completo),
           cat_valores_catalogo_prioridad:cat_valores_catalogo!tbl_documento_entrante_id_prioridad_fkey(valor),
-          cat_valores_catalogo_tipo_doc:cat_valores_catalogo!tbl_documento_entrante_id_tipo_documento_fkey(valor),
-          cat_valores_catalogo_tipo_atencion:cat_valores_catalogo!tbl_documento_entrante_id_tipo_atencion_fkey(valor),
-          cat_valores_catalogo_estatus:cat_valores_catalogo!tbl_documento_entrante_estatus_documento_fkey(valor)
+          cat_valores_catalogo_tipo_doc:cat_valores_catalogo!tbl_documento_entrante_id_tipo_doc_fkey(valor),
+          cat_valores_catalogo_tipo_atencion:cat_valores_catalogo!tbl_documento_entrante_id_tipo_asunto_fkey(valor),
+          cat_valores_catalogo_estatus:cat_valores_catalogo!tbl_documento_entrante_estatus_general_fkey(valor)
         `)
         .order('fecha_registro', { ascending: false })
 
@@ -191,21 +191,21 @@ export default function DocumentosEntrantesPage() {
     if (searchTerm) {
       const search = searchTerm.toLowerCase()
       filtered = filtered.filter(doc =>
-        doc.folio_interno.toLowerCase().includes(search) ||
+        doc.folio_interno?.toLowerCase().includes(search) ||
         doc.folio_externo?.toLowerCase().includes(search) ||
-        doc.asunto.toLowerCase().includes(search) ||
-        doc.remitente_nombre.toLowerCase().includes(search)
+        doc.asunto?.toLowerCase().includes(search) ||
+        doc.remitente_nombre?.toLowerCase().includes(search)
       )
     }
 
     // Filtro por prioridad
     if (filterPrioridad) {
-      filtered = filtered.filter(doc => doc.id_prioridad === parseInt(filterPrioridad))
+      filtered = filtered.filter(doc => doc.id_prioridad === filterPrioridad)
     }
 
     // Filtro por estatus
     if (filterEstatus) {
-      filtered = filtered.filter(doc => doc.estatus_documento === parseInt(filterEstatus))
+      filtered = filtered.filter(doc => doc.estatus_general === filterEstatus)
     }
 
     // Filtro por rango de fechas
@@ -264,20 +264,20 @@ export default function DocumentosEntrantesPage() {
       folio_externo: null,
       fecha_recepcion: new Date().toISOString().split('T')[0],
       fecha_documento: null,
-      id_prioridad: prioridades.find(p => p.valor === 'Media')?.id_valor_catalogo || 0,
-      id_tipo_documento: tiposDoc[0]?.id_valor_catalogo || 0,
-      id_tipo_atencion: tiposAtencion[0]?.id_valor_catalogo || 0,
+      id_prioridad: prioridades.find(p => p.valor === 'Normal')?.id_valor_catalogo || null,
+      id_tipo_doc: tiposDoc[0]?.id_valor_catalogo || null,
+      id_tipo_asunto: null,
       remitente_nombre: '',
       remitente_cargo: null,
       remitente_institucion: null,
       asunto: '',
       observaciones: null,
-      id_ua_destinataria: 0,
+      id_ua_destinataria: '',
       numero_anexos: 0,
-      estatus_documento: estatus.find(e => e.valor === 'Recibido')?.id_valor_catalogo || 0,
-      archivo_url: null,
-      archivo_nombre: null,
-      texto_ocr: null,
+      estatus_general: estatus.find(e => e.valor === 'Registrado')?.id_valor_catalogo || null,
+      storage_path: null,
+      nombre_archivo: null,
+      contenido_ocr: null,
       hash_archivo: null
     })
     setUploadedFile(null)
@@ -292,8 +292,8 @@ export default function DocumentosEntrantesPage() {
       fecha_recepcion: doc.fecha_recepcion,
       fecha_documento: doc.fecha_documento,
       id_prioridad: doc.id_prioridad,
-      id_tipo_documento: doc.id_tipo_documento,
-      id_tipo_atencion: doc.id_tipo_atencion,
+      id_tipo_doc: doc.id_tipo_doc,
+      id_tipo_asunto: doc.id_tipo_asunto,
       remitente_nombre: doc.remitente_nombre,
       remitente_cargo: doc.remitente_cargo,
       remitente_institucion: doc.remitente_institucion,
@@ -301,10 +301,10 @@ export default function DocumentosEntrantesPage() {
       observaciones: doc.observaciones,
       id_ua_destinataria: doc.id_ua_destinataria,
       numero_anexos: doc.numero_anexos,
-      estatus_documento: doc.estatus_documento,
-      archivo_url: doc.archivo_url,
-      archivo_nombre: doc.archivo_nombre,
-      texto_ocr: doc.texto_ocr,
+      estatus_general: doc.estatus_general,
+      storage_path: doc.storage_path,
+      nombre_archivo: doc.nombre_archivo,
+      contenido_ocr: doc.contenido_ocr,
       hash_archivo: doc.hash_archivo
     })
     setUploadedFile(null)
@@ -323,10 +323,10 @@ export default function DocumentosEntrantesPage() {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) throw new Error('No hay sesión activa')
 
-      let fileUrl = formData.archivo_url
-      let fileName = formData.archivo_nombre
+      let fileUrl = formData.storage_path
+      let fileName = formData.nombre_archivo
       let fileHash = formData.hash_archivo
-      let ocrText = formData.texto_ocr
+      let ocrText = formData.contenido_ocr
 
       // Si hay archivo nuevo, subirlo
       if (uploadedFile) {
@@ -339,10 +339,10 @@ export default function DocumentosEntrantesPage() {
 
       const documentData = {
         ...formData,
-        archivo_url: fileUrl,
-        archivo_nombre: fileName,
+        storage_path: fileUrl,
+        nombre_archivo: fileName,
         hash_archivo: fileHash,
-        texto_ocr: ocrText,
+        contenido_ocr: ocrText,
         id_usuario_registro: user.id
       }
 
@@ -351,7 +351,7 @@ export default function DocumentosEntrantesPage() {
         const { error: updateError } = await supabase
           .from('tbl_documento_entrante')
           .update(documentData)
-          .eq('id_documento', selectedDoc.id_documento)
+          .eq('id_doc_entrante', selectedDoc.id_doc_entrante)
 
         if (updateError) throw updateError
         setSuccess('Documento actualizado exitosamente')
@@ -516,7 +516,7 @@ export default function DocumentosEntrantesPage() {
       icon: <Eye className="w-4 h-4" />,
       onClick: (doc: DocumentoEntrante) => {
         // TODO: Navegar a detalle
-        console.log('Ver documento:', doc.id_documento)
+        console.log('Ver documento:', doc.id_doc_entrante)
       },
       variant: 'ghost' as const
     },
@@ -531,7 +531,7 @@ export default function DocumentosEntrantesPage() {
       icon: <Send className="w-4 h-4" />,
       onClick: (doc: DocumentoEntrante) => {
         // TODO: Abrir modal de turnado
-        console.log('Turnar documento:', doc.id_documento)
+        console.log('Turnar documento:', doc.id_doc_entrante)
       },
       variant: 'ghost' as const
     }
@@ -678,7 +678,7 @@ export default function DocumentosEntrantesPage() {
               {/* Folio Interno */}
               <Input
                 label="Folio Interno"
-                value={formData.folio_interno}
+                value={formData.folio_interno || ''}
                 onChange={(e) => setFormData({ ...formData, folio_interno: e.target.value })}
                 required
                 placeholder="DOC-2024-001"
@@ -715,8 +715,8 @@ export default function DocumentosEntrantesPage() {
                   Prioridad <span className="text-red-500">*</span>
                 </label>
                 <select
-                  value={formData.id_prioridad}
-                  onChange={(e) => setFormData({ ...formData, id_prioridad: parseInt(e.target.value) })}
+                  value={formData.id_prioridad || ''}
+                  onChange={(e) => setFormData({ ...formData, id_prioridad: e.target.value || null })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                   required
                 >
@@ -735,8 +735,8 @@ export default function DocumentosEntrantesPage() {
                   Tipo de Documento <span className="text-red-500">*</span>
                 </label>
                 <select
-                  value={formData.id_tipo_documento}
-                  onChange={(e) => setFormData({ ...formData, id_tipo_documento: parseInt(e.target.value) })}
+                  value={formData.id_tipo_doc || ''}
+                  onChange={(e) => setFormData({ ...formData, id_tipo_doc: e.target.value || null })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                   required
                 >
@@ -755,8 +755,8 @@ export default function DocumentosEntrantesPage() {
                   Tipo de Atención <span className="text-red-500">*</span>
                 </label>
                 <select
-                  value={formData.id_tipo_atencion}
-                  onChange={(e) => setFormData({ ...formData, id_tipo_atencion: parseInt(e.target.value) })}
+                  value={formData.id_tipo_asunto || ''}
+                  onChange={(e) => setFormData({ ...formData, id_tipo_asunto: e.target.value || null })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                   required
                 >
@@ -775,8 +775,8 @@ export default function DocumentosEntrantesPage() {
                   Unidad Administrativa Destinataria <span className="text-red-500">*</span>
                 </label>
                 <select
-                  value={formData.id_ua_destinataria}
-                  onChange={(e) => setFormData({ ...formData, id_ua_destinataria: parseInt(e.target.value) })}
+                  value={formData.id_ua_destinataria || ''}
+                  onChange={(e) => setFormData({ ...formData, id_ua_destinataria: e.target.value || '' })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                   required
                 >
@@ -793,7 +793,7 @@ export default function DocumentosEntrantesPage() {
               <div className="col-span-2">
                 <Input
                   label="Nombre del Remitente"
-                  value={formData.remitente_nombre}
+                  value={formData.remitente_nombre || ''}
                   onChange={(e) => setFormData({ ...formData, remitente_nombre: e.target.value })}
                   required
                   placeholder="Nombre completo del remitente"
@@ -820,7 +820,7 @@ export default function DocumentosEntrantesPage() {
               <Input
                 type="number"
                 label="Número de Anexos"
-                value={formData.numero_anexos}
+                value={formData.numero_anexos || 0}
                 onChange={(e) => setFormData({ ...formData, numero_anexos: parseInt(e.target.value) || 0 })}
                 min="0"
               />
@@ -831,8 +831,8 @@ export default function DocumentosEntrantesPage() {
                   Estatus <span className="text-red-500">*</span>
                 </label>
                 <select
-                  value={formData.estatus_documento}
-                  onChange={(e) => setFormData({ ...formData, estatus_documento: parseInt(e.target.value) })}
+                  value={formData.estatus_general || ''}
+                  onChange={(e) => setFormData({ ...formData, estatus_general: e.target.value || null })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                   required
                 >
@@ -889,9 +889,9 @@ export default function DocumentosEntrantesPage() {
                   Formatos permitidos: PDF, Imágenes, Word. Máximo 50 MB.
                   {uploadedFile && <span className="text-green-600 ml-2">✓ {uploadedFile.name}</span>}
                 </p>
-                {formData.archivo_nombre && !uploadedFile && (
+                {formData.nombre_archivo && !uploadedFile && (
                   <p className="text-xs text-blue-600 mt-1">
-                    Archivo actual: {formData.archivo_nombre}
+                    Archivo actual: {formData.nombre_archivo}
                   </p>
                 )}
               </div>

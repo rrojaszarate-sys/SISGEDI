@@ -64,11 +64,11 @@ export default function DocumentoDetallePage() {
           cat_unidad_administrativa!tbl_documento_entrante_id_ua_destinataria_fkey(nombre_ua, codigo_ua),
           tbl_usuarios_registro:tbl_usuarios!tbl_documento_entrante_id_usuario_registro_fkey(nombre_completo, correo_institucional),
           cat_valores_catalogo_prioridad:cat_valores_catalogo!tbl_documento_entrante_id_prioridad_fkey(valor),
-          cat_valores_catalogo_tipo_doc:cat_valores_catalogo!tbl_documento_entrante_id_tipo_documento_fkey(valor),
-          cat_valores_catalogo_tipo_atencion:cat_valores_catalogo!tbl_documento_entrante_id_tipo_atencion_fkey(valor),
-          cat_valores_catalogo_estatus:cat_valores_catalogo!tbl_documento_entrante_estatus_documento_fkey(valor)
+          cat_valores_catalogo_tipo_doc:cat_valores_catalogo!tbl_documento_entrante_id_tipo_doc_fkey(valor),
+          cat_valores_catalogo_tipo_atencion:cat_valores_catalogo!tbl_documento_entrante_id_tipo_asunto_fkey(valor),
+          cat_valores_catalogo_estatus:cat_valores_catalogo!tbl_documento_entrante_estatus_general_fkey(valor)
         `)
-        .eq('id_documento', params.id)
+        .eq('id_doc_entrante', params.id)
         .single()
 
       if (fetchError) throw fetchError
@@ -173,7 +173,7 @@ export default function DocumentoDetallePage() {
         <div className="flex items-center gap-2">
           <Button
             variant="secondary"
-            onClick={() => router.push(`/dashboard/documentos/entrantes?edit=${documento.id_documento}`)}
+            onClick={() => router.push(`/dashboard/documentos/entrantes?edit=${documento.id_doc_entrante}`)}
           >
             <Edit2 className="mr-2 h-4 w-4" />
             Editar
@@ -205,7 +205,7 @@ export default function DocumentoDetallePage() {
         </div>
 
         <div className="text-sm text-gray-600">
-          Registrado: {new Date(documento.fecha_registro).toLocaleString('es-MX')}
+          Registrado: {documento.fecha_registro ? new Date(documento.fecha_registro).toLocaleString('es-MX') : 'No registrado'}
         </div>
       </div>
 
@@ -290,13 +290,7 @@ export default function DocumentoDetallePage() {
               </div>
 
               {/* Número de Anexos */}
-              <div>
-                <label className="block text-sm font-medium text-gray-500 mb-1 flex items-center gap-1">
-                  <Paperclip className="w-4 h-4" />
-                  Número de Anexos
-                </label>
-                <p className="text-gray-900">{documento.numero_anexos}</p>
-              </div>
+              {/* TODO: Implementar conteo de anexos desde tbl_anexos */}
 
               {/* Observaciones */}
               {documento.observaciones && (
@@ -347,7 +341,7 @@ export default function DocumentoDetallePage() {
           </div>
 
           {/* Texto OCR */}
-          {documento.texto_ocr && (
+          {documento.contenido_ocr && (
             <div className="bg-white rounded-lg shadow">
               <div className="p-6 border-b border-gray-200 flex items-center justify-between">
                 <h2 className="text-xl font-semibold text-gray-900 flex items-center gap-2">
@@ -366,7 +360,7 @@ export default function DocumentoDetallePage() {
                 <div className="p-6">
                   <div className="bg-gray-50 rounded-lg p-4 max-h-96 overflow-y-auto">
                     <pre className="whitespace-pre-wrap text-sm text-gray-800 font-mono">
-                      {documento.texto_ocr}
+                      {documento.contenido_ocr}
                     </pre>
                   </div>
                   <p className="text-xs text-gray-500 mt-2">
@@ -381,7 +375,7 @@ export default function DocumentoDetallePage() {
         {/* Sidebar */}
         <div className="space-y-6">
           {/* Archivo Adjunto */}
-          {documento.archivo_url && (
+          {documento.storage_path && (
             <div className="bg-white rounded-lg shadow">
               <div className="p-6 border-b border-gray-200">
                 <h3 className="font-semibold text-gray-900 flex items-center gap-2">
@@ -394,7 +388,7 @@ export default function DocumentoDetallePage() {
                   <FileText className="w-8 h-8 text-blue-600" />
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-gray-900 truncate">
-                      {documento.archivo_nombre || 'Documento'}
+                      {documento.nombre_archivo || 'Documento'}
                     </p>
                     <p className="text-xs text-gray-500">
                       {documento.hash_archivo ? `Hash: ${documento.hash_archivo.substring(0, 16)}...` : ''}
@@ -450,7 +444,7 @@ export default function DocumentoDetallePage() {
                 {documento.tbl_usuarios_registro?.correo_institucional}
               </p>
               <p className="text-xs text-gray-500 mt-2">
-                {new Date(documento.fecha_registro).toLocaleString('es-MX')}
+                {documento.fecha_registro ? new Date(documento.fecha_registro).toLocaleString('es-MX') : 'No registrado'}
               </p>
             </div>
           </div>
