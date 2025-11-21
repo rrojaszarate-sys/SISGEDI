@@ -21,15 +21,83 @@ import {
   useDisclosure,
   Textarea,
   Slider,
+  Card,
 } from '@nextui-org/react';
-import { Send, Eye, CheckCircle, XCircle, TrendingUp, Inbox, SendHorizonal } from 'lucide-react';
-import { supabase } from '../../lib/supabase';
+import { Send, Eye, CheckCircle, XCircle, TrendingUp, Inbox, SendHorizonal, RefreshCw } from 'lucide-react';
+import { supabase, DEV_MODE } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import { toast } from 'sonner';
 
+// Datos mock para modo desarrollo
+const MOCK_TURNADOS_RECIBIDOS = [
+  {
+    id_turnado: 'turn-1',
+    id_doc_entrante: 'doc-1',
+    fecha_turnado: new Date().toISOString(),
+    fecha_vencimiento: new Date(Date.now() + 86400000 * 5).toISOString(),
+    instruccion: 'Favor de revisar y dar respuesta',
+    porcentaje_avance: 30,
+    estatus_turnado: 'En_Proceso',
+    tbl_documento_entrante: { folio_interno: 'DOC-2025-0156', asunto: 'Solicitud de informacion sobre programa social' },
+    ua_origen: { nombre_ua: 'Direccion General', codigo_ua: 'DG-001' },
+    ua_destino: { nombre_ua: 'Direccion Juridica', codigo_ua: 'DJ-001' },
+  },
+  {
+    id_turnado: 'turn-2',
+    id_doc_entrante: 'doc-2',
+    fecha_turnado: new Date(Date.now() - 86400000).toISOString(),
+    fecha_vencimiento: new Date(Date.now() + 86400000 * 2).toISOString(),
+    instruccion: 'Urgente - Elaborar dictamen',
+    porcentaje_avance: 0,
+    estatus_turnado: 'Turnado',
+    tbl_documento_entrante: { folio_interno: 'DOC-2025-0155', asunto: 'Convenio de colaboracion interinstitucional' },
+    ua_origen: { nombre_ua: 'Secretaria Particular', codigo_ua: 'SP-001' },
+    ua_destino: { nombre_ua: 'Direccion Juridica', codigo_ua: 'DJ-001' },
+  },
+  {
+    id_turnado: 'turn-3',
+    id_doc_entrante: 'doc-3',
+    fecha_turnado: new Date(Date.now() - 86400000 * 3).toISOString(),
+    fecha_vencimiento: new Date(Date.now() - 86400000).toISOString(),
+    instruccion: 'Revisar presupuesto',
+    porcentaje_avance: 80,
+    estatus_turnado: 'En_Proceso',
+    tbl_documento_entrante: { folio_interno: 'DOC-2025-0154', asunto: 'Respuesta a oficio sobre revision de presupuesto' },
+    ua_origen: { nombre_ua: 'Tesoreria', codigo_ua: 'TES-001' },
+    ua_destino: { nombre_ua: 'Direccion Juridica', codigo_ua: 'DJ-001' },
+  },
+];
+
+const MOCK_TURNADOS_ENVIADOS = [
+  {
+    id_turnado: 'turn-4',
+    id_doc_entrante: 'doc-4',
+    fecha_turnado: new Date(Date.now() - 86400000 * 2).toISOString(),
+    fecha_vencimiento: new Date(Date.now() + 86400000 * 7).toISOString(),
+    instruccion: 'Para su conocimiento',
+    porcentaje_avance: 100,
+    estatus_turnado: 'Concluido',
+    tbl_documento_entrante: { folio_interno: 'DOC-2025-0153', asunto: 'Invitacion a evento oficial' },
+    ua_origen: { nombre_ua: 'Direccion Juridica', codigo_ua: 'DJ-001' },
+    ua_destino: { nombre_ua: 'Archivo General', codigo_ua: 'AG-001' },
+  },
+  {
+    id_turnado: 'turn-5',
+    id_doc_entrante: 'doc-5',
+    fecha_turnado: new Date(Date.now() - 86400000).toISOString(),
+    fecha_vencimiento: new Date(Date.now() + 86400000 * 10).toISOString(),
+    instruccion: 'Tramitar licencia',
+    porcentaje_avance: 50,
+    estatus_turnado: 'En_Proceso',
+    tbl_documento_entrante: { folio_interno: 'DOC-2025-0152', asunto: 'Tramite de licencia de funcionamiento' },
+    ua_origen: { nombre_ua: 'Direccion Juridica', codigo_ua: 'DJ-001' },
+    ua_destino: { nombre_ua: 'Ventanilla Unica', codigo_ua: 'VU-001' },
+  },
+];
+
 export default function BandejaTurnadosPage() {
   const navigate = useNavigate();
-  const { usuario } = useAuth();
+  const { usuario, isDevMode } = useAuth();
   const [turnados, setTurnados] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [vista, setVista] = useState('recibidos');
@@ -49,6 +117,13 @@ export default function BandejaTurnadosPage() {
   const fetchTurnados = async () => {
     setLoading(true);
 
+    // En modo desarrollo, usar datos mock
+    if (isDevMode || DEV_MODE) {
+      setTurnados(vista === 'recibidos' ? MOCK_TURNADOS_RECIBIDOS : MOCK_TURNADOS_ENVIADOS);
+      setLoading(false);
+      return;
+    }
+
     let query = supabase
       .from('tbl_turnado')
       .select(`
@@ -60,9 +135,9 @@ export default function BandejaTurnadosPage() {
       .order('fecha_turnado', { ascending: false });
 
     if (vista === 'recibidos') {
-      query = query.eq('id_ua_destino', usuario?.id_ua);
+      query = query.eq('id_ua_destino', usuario?.unidad_administrativa?.id_ua);
     } else {
-      query = query.eq('id_ua_origen', usuario?.id_ua);
+      query = query.eq('id_ua_origen', usuario?.unidad_administrativa?.id_ua);
     }
 
     const { data } = await query;
@@ -71,6 +146,11 @@ export default function BandejaTurnadosPage() {
   };
 
   const handleRecibir = async (turnado: any) => {
+    if (isDevMode || DEV_MODE) {
+      toast.success('Documento recibido (modo desarrollo)');
+      return;
+    }
+
     const { error } = await supabase
       .from('tbl_turnado')
       .update({ estatus_turnado: 'Recibido' })
@@ -94,6 +174,12 @@ export default function BandejaTurnadosPage() {
   const handleAvance = async () => {
     if (!selectedTurnado) return;
 
+    if (isDevMode || DEV_MODE) {
+      toast.success(`Avance registrado: ${nuevoAvance}% (modo desarrollo)`);
+      onAvanceClose();
+      return;
+    }
+
     const { error } = await supabase
       .from('tbl_turnado')
       .update({
@@ -106,7 +192,6 @@ export default function BandejaTurnadosPage() {
     if (error) {
       toast.error('Error al registrar avance');
     } else {
-      // Registrar en historial
       await supabase.from('tbl_avance').insert({
         id_turnado: selectedTurnado.id_turnado,
         porcentaje_anterior: selectedTurnado.porcentaje_avance,
@@ -130,6 +215,12 @@ export default function BandejaTurnadosPage() {
   const handleRechazo = async () => {
     if (!selectedTurnado || !motivoRechazo) {
       toast.error('Ingresa el motivo del rechazo');
+      return;
+    }
+
+    if (isDevMode || DEV_MODE) {
+      toast.success('Documento rechazado (modo desarrollo)');
+      onRechazoClose();
       return;
     }
 
@@ -182,24 +273,46 @@ export default function BandejaTurnadosPage() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold flex items-center gap-2">
-          <Send className="text-primary" />
-          Bandeja de Turnados
-        </h1>
-        <p className="text-gray-500">Gestión de documentos turnados</p>
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+          <h1
+            className="text-xl sm:text-2xl font-bold flex items-center gap-2"
+            style={{ color: 'var(--theme-primary-800)' }}
+          >
+            <Send style={{ color: 'var(--theme-primary-600)' }} />
+            Bandeja de Turnados
+          </h1>
+          <p className="text-sm text-gray-500">Gestion de documentos turnados</p>
+        </div>
+        <Button
+          isIconOnly
+          variant="flat"
+          onPress={fetchTurnados}
+          isLoading={loading}
+        >
+          <RefreshCw size={18} />
+        </Button>
       </div>
 
       {/* Tabs */}
-      <Tabs selectedKey={vista} onSelectionChange={(k) => setVista(k as string)}>
+      <Tabs
+        selectedKey={vista}
+        onSelectionChange={(k) => setVista(k as string)}
+        color="primary"
+        variant="bordered"
+        classNames={{
+          tabList: "gap-2",
+          cursor: "bg-[var(--theme-primary-700)]",
+        }}
+      >
         <Tab
           key="recibidos"
           title={
             <div className="flex items-center gap-2">
-              <Inbox size={18} />
-              Recibidos
+              <Inbox size={16} />
+              <span className="hidden sm:inline">Recibidos</span>
             </div>
           }
         />
@@ -207,129 +320,145 @@ export default function BandejaTurnadosPage() {
           key="enviados"
           title={
             <div className="flex items-center gap-2">
-              <SendHorizonal size={18} />
-              Enviados
+              <SendHorizonal size={16} />
+              <span className="hidden sm:inline">Enviados</span>
             </div>
           }
         />
       </Tabs>
 
       {/* Tabla */}
-      <Table aria-label="Turnados">
-        <TableHeader>
-          <TableColumn>FOLIO</TableColumn>
-          <TableColumn>ASUNTO</TableColumn>
-          <TableColumn>{vista === 'recibidos' ? 'DE' : 'PARA'}</TableColumn>
-          <TableColumn>VENCIMIENTO</TableColumn>
-          <TableColumn>AVANCE</TableColumn>
-          <TableColumn>ESTATUS</TableColumn>
-          <TableColumn>ACCIONES</TableColumn>
-        </TableHeader>
-        <TableBody items={turnados} isLoading={loading} emptyContent="Sin turnados">
-          {(t) => (
-            <TableRow key={t.id_turnado}>
-              <TableCell className="font-mono text-sm">
-                {t.tbl_documento_entrante?.folio_interno}
-              </TableCell>
-              <TableCell className="max-w-xs">
-                <p className="truncate">{t.tbl_documento_entrante?.asunto}</p>
-              </TableCell>
-              <TableCell>
-                {vista === 'recibidos'
-                  ? t.ua_origen?.codigo_ua
-                  : t.ua_destino?.codigo_ua}
-              </TableCell>
-              <TableCell>
-                <Chip
-                  size="sm"
-                  color={getSemaforoColor(t.fecha_vencimiento, t.porcentaje_avance)}
-                >
-                  {formatDate(t.fecha_vencimiento)}
-                </Chip>
-              </TableCell>
-              <TableCell>
-                <div className="w-24">
-                  <Progress
-                    value={t.porcentaje_avance}
+      <Card className="shadow-sm overflow-hidden">
+        <Table aria-label="Turnados" removeWrapper>
+          <TableHeader>
+            <TableColumn className="text-xs">FOLIO</TableColumn>
+            <TableColumn className="text-xs hidden md:table-cell">ASUNTO</TableColumn>
+            <TableColumn className="text-xs">{vista === 'recibidos' ? 'DE' : 'PARA'}</TableColumn>
+            <TableColumn className="text-xs hidden sm:table-cell">VENCE</TableColumn>
+            <TableColumn className="text-xs">AVANCE</TableColumn>
+            <TableColumn className="text-xs">ESTATUS</TableColumn>
+            <TableColumn className="text-xs">ACCIONES</TableColumn>
+          </TableHeader>
+          <TableBody items={turnados} isLoading={loading} emptyContent="Sin turnados">
+            {(t) => (
+              <TableRow key={t.id_turnado} className="hover:bg-gray-50">
+                <TableCell>
+                  <span
+                    className="font-mono text-xs sm:text-sm font-medium"
+                    style={{ color: 'var(--theme-primary-700)' }}
+                  >
+                    {t.tbl_documento_entrante?.folio_interno}
+                  </span>
+                </TableCell>
+                <TableCell className="hidden md:table-cell">
+                  <p className="text-xs truncate max-w-[200px]">{t.tbl_documento_entrante?.asunto}</p>
+                </TableCell>
+                <TableCell>
+                  <span className="text-xs text-gray-600">
+                    {vista === 'recibidos' ? t.ua_origen?.codigo_ua : t.ua_destino?.codigo_ua}
+                  </span>
+                </TableCell>
+                <TableCell className="hidden sm:table-cell">
+                  <Chip
                     size="sm"
-                    color={t.porcentaje_avance === 100 ? 'success' : 'primary'}
-                  />
-                  <span className="text-xs text-gray-500">{t.porcentaje_avance}%</span>
-                </div>
-              </TableCell>
-              <TableCell>
-                <Chip size="sm" color={getEstatusColor(t.estatus_turnado)}>
-                  {t.estatus_turnado}
-                </Chip>
-              </TableCell>
-              <TableCell>
-                <div className="flex gap-1">
-                  <Tooltip content="Ver documento">
-                    <Button
-                      isIconOnly
+                    color={getSemaforoColor(t.fecha_vencimiento, t.porcentaje_avance)}
+                    variant="flat"
+                  >
+                    <span className="text-[10px]">{formatDate(t.fecha_vencimiento)}</span>
+                  </Chip>
+                </TableCell>
+                <TableCell>
+                  <div className="w-16 sm:w-24">
+                    <Progress
+                      value={t.porcentaje_avance}
                       size="sm"
-                      variant="light"
-                      onPress={() =>
-                        navigate(`/documentos/${t.tbl_documento_entrante?.id_doc_entrante || t.id_doc_entrante}`)
-                      }
-                    >
-                      <Eye size={16} />
-                    </Button>
-                  </Tooltip>
+                      color={t.porcentaje_avance === 100 ? 'success' : 'primary'}
+                    />
+                    <span className="text-[10px] text-gray-500">{t.porcentaje_avance}%</span>
+                  </div>
+                </TableCell>
+                <TableCell>
+                  <Chip size="sm" color={getEstatusColor(t.estatus_turnado)} variant="flat">
+                    <span className="text-[10px]">{t.estatus_turnado.replace('_', ' ')}</span>
+                  </Chip>
+                </TableCell>
+                <TableCell>
+                  <div className="flex gap-1">
+                    <Tooltip content="Ver">
+                      <Button
+                        isIconOnly
+                        size="sm"
+                        variant="light"
+                        onPress={() => {
+                          if (!isDevMode && !DEV_MODE) {
+                            navigate(`/documentos/${t.id_doc_entrante}`);
+                          }
+                        }}
+                      >
+                        <Eye size={14} style={{ color: 'var(--theme-primary-600)' }} />
+                      </Button>
+                    </Tooltip>
 
-                  {vista === 'recibidos' && t.estatus_turnado === 'Turnado' && (
-                    <>
-                      <Tooltip content="Recibir">
-                        <Button
-                          isIconOnly
-                          size="sm"
-                          variant="light"
-                          color="success"
-                          onPress={() => handleRecibir(t)}
-                        >
-                          <CheckCircle size={16} />
-                        </Button>
-                      </Tooltip>
-                      <Tooltip content="Rechazar">
-                        <Button
-                          isIconOnly
-                          size="sm"
-                          variant="light"
-                          color="danger"
-                          onPress={() => openRechazoModal(t)}
-                        >
-                          <XCircle size={16} />
-                        </Button>
-                      </Tooltip>
-                    </>
-                  )}
-
-                  {vista === 'recibidos' &&
-                    ['Recibido', 'En_Proceso'].includes(t.estatus_turnado) &&
-                    t.porcentaje_avance < 100 && (
-                      <Tooltip content="Registrar avance">
-                        <Button
-                          isIconOnly
-                          size="sm"
-                          variant="light"
-                          color="primary"
-                          onPress={() => openAvanceModal(t)}
-                        >
-                          <TrendingUp size={16} />
-                        </Button>
-                      </Tooltip>
+                    {vista === 'recibidos' && t.estatus_turnado === 'Turnado' && (
+                      <>
+                        <Tooltip content="Recibir">
+                          <Button
+                            isIconOnly
+                            size="sm"
+                            variant="light"
+                            onPress={() => handleRecibir(t)}
+                          >
+                            <CheckCircle size={14} className="text-green-600" />
+                          </Button>
+                        </Tooltip>
+                        <Tooltip content="Rechazar">
+                          <Button
+                            isIconOnly
+                            size="sm"
+                            variant="light"
+                            onPress={() => openRechazoModal(t)}
+                          >
+                            <XCircle size={14} className="text-red-600" />
+                          </Button>
+                        </Tooltip>
+                      </>
                     )}
-                </div>
-              </TableCell>
-            </TableRow>
-          )}
-        </TableBody>
-      </Table>
+
+                    {vista === 'recibidos' &&
+                      ['Recibido', 'En_Proceso'].includes(t.estatus_turnado) &&
+                      t.porcentaje_avance < 100 && (
+                        <Tooltip content="Avance">
+                          <Button
+                            isIconOnly
+                            size="sm"
+                            variant="light"
+                            onPress={() => openAvanceModal(t)}
+                          >
+                            <TrendingUp size={14} className="text-blue-600" />
+                          </Button>
+                        </Tooltip>
+                      )}
+                  </div>
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+      </Card>
+
+      {/* Info dev */}
+      {(isDevMode || DEV_MODE) && (
+        <p className="text-xs text-center text-gray-400">
+          Modo desarrollo - Mostrando {turnados.length} turnados de ejemplo
+        </p>
+      )}
 
       {/* Modal Avance */}
-      <Modal isOpen={isAvanceOpen} onClose={onAvanceClose}>
+      <Modal isOpen={isAvanceOpen} onClose={onAvanceClose} size="md">
         <ModalContent>
-          <ModalHeader>Registrar Avance</ModalHeader>
+          <ModalHeader style={{ color: 'var(--theme-primary-800)' }}>
+            Registrar Avance
+          </ModalHeader>
           <ModalBody>
             <div className="space-y-4">
               <div>
@@ -346,8 +475,17 @@ export default function BandejaTurnadosPage() {
                     { value: 50, label: '50%' },
                     { value: 100, label: '100%' },
                   ]}
+                  classNames={{
+                    filler: "bg-[var(--theme-primary-600)]",
+                    thumb: "bg-[var(--theme-primary-700)]",
+                  }}
                 />
-                <p className="text-center text-2xl font-bold mt-2">{nuevoAvance}%</p>
+                <p
+                  className="text-center text-2xl font-bold mt-2"
+                  style={{ color: 'var(--theme-primary-700)' }}
+                >
+                  {nuevoAvance}%
+                </p>
               </div>
               <Textarea
                 label="Comentario"
@@ -361,7 +499,11 @@ export default function BandejaTurnadosPage() {
             <Button variant="light" onPress={onAvanceClose}>
               Cancelar
             </Button>
-            <Button color="primary" onPress={handleAvance}>
+            <Button
+              style={{ backgroundColor: 'var(--theme-primary-700)' }}
+              className="text-white"
+              onPress={handleAvance}
+            >
               Guardar
             </Button>
           </ModalFooter>
@@ -369,13 +511,13 @@ export default function BandejaTurnadosPage() {
       </Modal>
 
       {/* Modal Rechazo */}
-      <Modal isOpen={isRechazoOpen} onClose={onRechazoClose}>
+      <Modal isOpen={isRechazoOpen} onClose={onRechazoClose} size="md">
         <ModalContent>
-          <ModalHeader>Rechazar Turnado</ModalHeader>
+          <ModalHeader className="text-red-700">Rechazar Turnado</ModalHeader>
           <ModalBody>
             <Textarea
               label="Motivo del Rechazo"
-              placeholder="Explica por qué rechazas este documento..."
+              placeholder="Explica por que rechazas este documento..."
               value={motivoRechazo}
               onValueChange={setMotivoRechazo}
               isRequired
